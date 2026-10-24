@@ -30,3 +30,4 @@ textarea{min-height:120px;resize:vertical}select{padding:9px}
 .cf{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;color:#111}.cf.h{background:var(--ok)}.cf.m{background:var(--wn)}.cf.l{background:var(--bad)}
 .mu{color:var(--mu);font-size:13px}.st{color:var(--mu);background:none;border:0;font-size:24px}.st.on{color:var(--st)}
 input[type=file]{width:100%;color:var(--mu)}label{display:block}
+.sc .cc{flex-wrap:wrap;gap:8px}header h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
