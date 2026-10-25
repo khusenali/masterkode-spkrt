@@ -10,16 +10,18 @@ const LN={G:'KELOMPOK',S:'SUBKELOMPOK',K:'KELAS'},cur=()=>[...NAV].reverse().fin
 const SI='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
 function toast(m){const t=$('#toast');t.textContent=m;t.className='on';clearTimeout(toast.h);toast.h=setTimeout(()=>t.className='',1400)}
 function copy(txt,msg){const done=()=>toast(msg||'Tersalin: '+txt);try{navigator.clipboard.writeText(txt).then(done,fb)}catch(e){fb()}function fb(){const a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove();done()}}
-const row=(cd,nm,at,sub)=>`<div class="row" ${at}><b class="cd">${esc(cd)}</b><span>${esc(nm)}${sub?`<small>${esc(sub)}</small>`:''}</span><i>›</i></div>`;
+const row=(cd,nm,at,sub)=>`<div class="row" ${at}><b class="cd">${esc(cd)}</b><span>${esc(nm)}${sub?`<small class="cl">${esc(sub)}</small>`:''}</span><i>›</i></div>`;
 const rowC=c=>row(fc(c.k),c.n,`data-a="comm" data-k="${c.k}"`,c.q.length+' kualitas');
 const sec=t=>`<div class="sec">${t}</div>`;
 function crumbs(code){let h='';if(code.length>=2)h+=row(code.slice(0,2),G[code.slice(0,2)],`data-a="node" data-l="G" data-c="${code.slice(0,2)}"`);if(code.length>=3)h+=row(fc(code.slice(0,3)),S[code.slice(0,3)],`data-a="node" data-l="S" data-c="${code.slice(0,3)}"`);if(code.length>=4)h+=row(fc(code.slice(0,4)),K[code.slice(0,4)],`data-a="node" data-l="K" data-c="${code.slice(0,4)}"`);return h}
 function V_home(){return`<div class="sb" data-a="srch">${SI}<span>Cari kode / nama komoditas…</span></div>`+
 (FQ.length?sec('FAVORIT KUALITAS (KETUK UNTUK SALIN)')+`<div class="chips">${FQ.map(t=>{const c=CM[t.slice(0,7)],y=c&&c.q.find(z=>z.c==t.slice(7));return c?`<button class="chip" data-a="cp" data-t="${t}">${esc(c.n)} · ${esc(y?y.n:t.slice(7))}</button>`:''}).join('')}</div>`:'')+(FV.length?sec('FAVORIT KOMODITAS')+`<div class="chips">${FV.map(k=>`<button class="chip" data-a="comm" data-k="${k}">${esc(CM[k].n)}</button>`).join('')}</div>`:'')+
 (RC.length?sec('KOMODITAS TERAKHIR')+RC.map(k=>rowC(CM[k])).join(''):'')+
-sec('EKSPLORASI')+Object.keys(G).sort().map(g=>row(g,G[g],`data-a="node" data-l="G" data-c="${g}"`)).join('')}
-function V_node(l,c){const T={G:S,S:K,K:null}[l],ch=l=='K'?CL.filter(x=>x.k.startsWith(c)).map(rowC).join(''):Object.keys(T).sort().filter(k=>k.startsWith(c)).map(k=>row(fc(k),T[k],`data-a="node" data-l="${l=='G'?'S':'K'}" data-c="${k}"`)).join('');
- const nm={G:G,S:S,K:K}[l][c];return`<span class="tag g">SPKRT 2027</span><span class="tag">${fc(c)}</span><span class="mu">${LN[l]}</span><h2>${esc(nm)}</h2>`+(c.length>2?sec('SEBELUMNYA')+crumbs(c.slice(0,-1)):'')+sec('TURUNAN')+ch}
+grp('A. Pengeluaran Konsumsi','Kode 01–11',Object.keys(G).sort().filter(g=>g<'12'))+grp('B. Pengeluaran Bukan Konsumsi','Kode 12',Object.keys(G).sort().filter(g=>g>='12'))}
+const grp=(t,c,ks)=>`<details class="grp" open><summary><b>${t}</b><span>${c}</span></summary>${ks.map(g=>row(g,G[g],`data-a="node" data-l="G" data-c="${g}"`,DESC[g])).join('')}</details>`;
+function V_node(l,c){const T={G:S,S:K,K:null}[l],nx=l=='G'?'S':'K',ch=l=='K'?CL.filter(x=>x.k.startsWith(c)).map(rowC).join(''):Object.keys(T).sort().filter(k=>k.startsWith(c)).map(k=>row(fc(k),T[k],`data-a="node" data-l="${nx}" data-c="${k}"`,DESC[k])).join('');
+ const nm={G:G,S:S,K:K}[l][c],ds=DESC[c],tb=[ds?['desc','DESKRIPSI']:0,c.length>2?['prev','SEBELUMNYA']:0,['ch','TURUNAN']].filter(Boolean);
+ return`<span class="tag g">SPKRT 2027</span><span class="tag">${fc(c)}</span><span class="mu">${LN[l]}</span><h2>${esc(nm)}</h2><div class="tabs">${tb.map((t,i)=>`<button class="${i?'':'on'}" data-a="goto" data-s="sx-${t[0]}">${t[1]}</button>`).join('')}</div>`+(ds?`<section id="sx-desc">${sec('DESKRIPSI')}<p class="ds"><b>Cakupan:</b> ${esc(ds)}</p></section>`:'')+(c.length>2?`<section id="sx-prev">${sec('SEBELUMNYA')}${crumbs(c.slice(0,-1))}</section>`:'')+`<section id="sx-ch">${sec('TURUNAN')}${ch}</section>`}
 function V_comm(k){const x=CM[k];return`<div style="display:flex;align-items:center"><div style="flex:1"><span class="tag g">SPKRT 2027</span><span class="tag">${fc(k)}</span><span class="mu">KOMODITAS</span></div><button class="st ${FV.includes(k)?'on':''}" data-a="fav" data-k="${k}">${FV.includes(k)?'★':'☆'}</button></div><h2>${esc(x.n)}</h2>`+sec('SEBELUMNYA')+crumbs(k.slice(0,4))+sec(`KUALITAS (${x.q.length})`)+`<input type="search" id="qf" placeholder="Filter kualitas…" data-k="${k}" style="margin-bottom:10px"><div id="ql">${qlist(k,'')}</div>`}
 function qlist(k,f){const x=CM[k],tk=nz(f).split(' ').filter(Boolean),r=x.q.filter(y=>!tk.length||tk.every(w=>y.t.includes(' '+w))||y.c.startsWith(f.trim()));return r.map(y=>`<div class="row" data-a="cp" data-t="${k}${y.c}"><b class="cd">${y.c}</b><span>${esc(y.n)}<small>${fc(k)} ${y.c}</small></span><button class="st ${FQ.includes(k+y.c)?'on':''}" data-a="favq" data-t="${k}${y.c}">${FQ.includes(k+y.c)?'★':'☆'}</button><button class="btn s o" data-a="cp" data-t="${k}${y.c}">Salin</button></div>`).join('')||'<p class="mu">Tidak ada.</p>'}
 function V_fav(){const tb=`<div class="chips" style="margin-bottom:10px"><button class="chip" data-a="ftab" data-v="k" ${ftab=='k'?'style="border-color:var(--ac)"':''}>Komoditas (${FV.length})</button><button class="chip" data-a="ftab" data-v="q" ${ftab=='q'?'style="border-color:var(--ac)"':''}>Kualitas (${FQ.length})</button></div>`;
@@ -40,49 +42,78 @@ return`<div class="sc"><b>Foto tulisan tangan / nota</b><details style="margin:8
 const isHeic=f=>/\.(heic|heif)$/i.test(f.name)||/hei[cf]/i.test(f.type),okImg=f=>/\.(jpe?g|png|heic|heif)$/i.test(f.name)||/^image\/(jpeg|png|hei[cf])$/i.test(f.type);
 const lsc=u=>new Promise((ok,no)=>{const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=no;document.head.appendChild(e)});
 async function toBmp(f){try{return await createImageBitmap(f)}catch(e){
- if(!isHeic(f))throw new Error('Foto tidak bisa dibaca: '+f.name+'. Gunakan JPG, PNG, atau HEIC.');
+ if(!isHeic(f))throw Object.assign(new Error('Foto tidak bisa dibaca: '+f.name+'. Gunakan JPG, PNG, atau HEIC.'),{fmt:1});
  try{if(!window.heic2any){try{await lsc('https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js')}catch(_){await lsc('https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js')}}
-  const o=await heic2any({blob:f,toType:'image/jpeg',quality:.85});return await createImageBitmap(Array.isArray(o)?o[0]:o)}catch(_){throw new Error('Foto HEIC tidak bisa dikonversi: '+f.name+'. Ubah ke JPG atau PNG, atau pastikan ada internet.')}}}
+  const o=await heic2any({blob:f,toType:'image/jpeg',quality:.85});return await createImageBitmap(Array.isArray(o)?o[0]:o)}catch(_){throw Object.assign(new Error('Foto HEIC tidak bisa dikonversi: '+f.name+'. Ubah ke JPG atau PNG, atau pastikan ada internet.'),{fmt:1})}}}
 const shrink=async f=>{const b=await toBmp(f),s=Math.min(1,1600/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(b,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.85).split(',')[1]};
 const cfgOk=()=>CFG.proxy&&!/GANTI/.test(CFG.proxy);
-const em=s=>s==401?'Akses ditolak oleh server (401). Hubungi pengelola.':s==429?'Batas harian atau kuota gratis habis (429). Coba lagi nanti atau besok.':s==413||s==400?'Foto terlalu besar atau terlalu banyak. Kurangi jumlah foto.':s==403?'Alamat app tidak diizinkan oleh server (403).':'Layanan gagal ('+s+'). Coba lagi nanti.';
-async function call(body){if(!cfgOk())throw new Error('Alamat proxy belum diatur di config.js.');const r=await fetch(CFG.proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(em(r.status));e.s=r.status;throw e}return j}
-async function ocr(){let fs=[...$('#ph').files];if(!fs.length)return toast('Pilih foto dulu');const bad=fs.filter(f=>!okImg(f));if(bad.length){toast('Format tidak didukung: '+bad.map(f=>f.name).join(', '));fs=fs.filter(okImg);if(!fs.length)return}
- if(!cfgOk())return toast('Alamat proxy belum diatur di config.js');
- if(!G2.ok){if(!confirm(NOTICE))return;G2.ok=true;sv()}
- let files=fs;if(fs.length>G2.max){files=fs.slice(0,G2.max);toast(`Dibatasi ${G2.max} foto per proses. ${fs.length-G2.max} foto diabaikan.`)}
+async function call(body){if(!cfgOk())throw Object.assign(new Error('cfg'),{cfg:1});let r;try{r=await fetch(CFG.proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}catch(_){throw Object.assign(new Error('net'),{net:1})}const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error('http'),{s:r.status});return j}
+const NET=()=>navigator.onLine===false;
+let mdRes=null,ocring=false;const MD={A:[]};
+function ask(o){return new Promise(res=>{const A=o.a||[['Tutup',undefined,1]],k=o.k||'info',fresh=!mdRes;if(mdRes){const p=mdRes;mdRes=null;p(undefined)}mdRes=res;MD.A=A;
+ $('#md').innerHTML=`<div class="mb" data-a="mdx"><div class="mc" data-a="mdn"><div class="mi ${k}">${{info:'i',warn:'!',err:'×',ok:'✓'}[k]}</div><h3>${esc(o.t)}</h3><p>${o.b}</p><div class="ma">${A.map((x,i)=>`<button class="btn ${x[2]?'':'o'}" data-a="mdc" data-v="${i}">${esc(x[0])}</button>`).join('')}</div></div></div>`;if(fresh)push({o:'md'})})}
+function mdDone(i){const f=mdRes;if(!f)return;mdRes=null;const v=i==null?undefined:MD.A[i][1];pend=()=>f(v);history.back()}
+function errInfo(e){const s=e.s;
+ if(e.cfg)return{t:'Layanan belum diatur',b:'Alamat layanan belum diisi di <b>config.js</b>. Hubungi pengelola app.'};
+ if(e.net)return{t:'Tidak ada koneksi internet',b:'Baca foto membutuhkan internet. Pencarian dan daftar teks tetap bisa dipakai tanpa internet. Sambungkan internet lalu coba lagi.',r:1};
+ if(s==429)return{t:'Batas penggunaan tercapai',b:'Kuota gratis (per menit atau per hari) sedang habis dan dipakai bersama semua pengguna. Tunggu beberapa menit atau coba lagi besok. Sementara itu, gunakan <b>Daftar teks</b>.'};
+ if(s==413||s==400)return{t:'Foto terlalu besar atau terlalu banyak',b:'Kurangi jumlah foto atau pilih foto yang lebih kecil, lalu coba lagi.'};
+ if(s==401||s==403)return{t:'Akses ditolak',b:'Server menolak permintaan dari app ini ('+s+'). Pengaturan di server mungkin belum sesuai. Hubungi pengelola.'};
+ if(e.fmt)return{t:'Foto tidak bisa diproses',b:esc(e.message)};
+ return{t:'Layanan sedang bermasalah',b:'Server atau Gemini gagal merespons'+(s?' (kode '+s+')':'')+'. Coba lagi beberapa saat lagi.',r:1}}
+async function errBox(e){const i=errInfo(e);return await ask({t:i.t,b:i.b,k:'err',a:i.r?[['Coba lagi',true,1],['Tutup',false]]:[['Tutup',false,1]]})}
+async function ocr(){if(ocring)return toast('Sedang membaca foto…');let fs=[...$('#ph').files];if(!fs.length)return toast('Pilih foto dulu');
+ const bad=fs.filter(f=>!okImg(f));
+ if(bad.length){fs=fs.filter(okImg);const nm=bad.map(f=>esc(f.name)).join(', ');
+  if(!fs.length){await ask({t:'Format foto tidak didukung',b:'File: '+nm+'.<br>Gunakan JPG, PNG, atau HEIC.',k:'err'});return}
+  if(!await ask({t:'Sebagian file tidak didukung',b:'Dilewati: '+nm+'.<br>Format yang didukung: JPG, PNG, HEIC.',k:'warn',a:[['Lanjut tanpa file itu',true,1],['Batal',false]]}))return}
+ if(!cfgOk()){await errBox({cfg:1});return}
+ if(!G2.ok){if(!await ask({t:'Foto dikirim ke Google',b:esc(NOTICE).replace(' Lanjutkan?',''),k:'warn',a:[['Saya mengerti, lanjutkan',true,1],['Batal',false]]}))return;G2.ok=true;sv()}
+ let files=fs;if(fs.length>G2.max){if(!await ask({t:'Terlalu banyak foto',b:`Anda memilih ${fs.length} foto. Batas per proses adalah ${G2.max}. Hanya ${G2.max} foto pertama yang diproses, sisanya dilewati.`,k:'warn',a:[[`Lanjut dengan ${G2.max} foto`,true,1],['Batal',false]]}))return;files=fs.slice(0,G2.max)}
  const td=today();if(GU.d!=td)GU={d:td,n:0};
- if(GU.n>=G2.warn&&!confirm(`Sudah ${GU.n} permintaan hari ini (batas peringatan ${G2.warn}). Kuota gratis Google terbatas dan bisa habis. Lanjutkan?`))return;
- $('#ost').textContent='Membaca '+files.length+' foto…';
- try{const im=[];for(const f of files)im.push(await shrink(f));if(im.reduce((a,x)=>a+x.length,0)>3400000)throw new Error('Total ukuran foto terlalu besar. Kurangi jumlah foto.');
-  const j=await call({mode:'ocr',images:im});GU.n++;LS.s('gu',GU);const a=j.items||[];
-  scanTxt=(scanTxt.trim()?scanTxt.trim()+'\n':'')+a.join('\n');busy='Selesai: '+a.length+' baris. Periksa dan edit teks, lalu ketuk Cocokkan.'}catch(e){busy=e.message||'Gagal membaca foto. Periksa koneksi.'}
- render.k=1;render()}
-async function tes(){$('#ost').textContent='Menguji koneksi…';
- try{await call({mode:'ping'});if(GU.d!=today())GU={d:today(),n:0};GU.n++;LS.s('gu',GU);busy='Koneksi berhasil. Layanan baca foto siap dipakai.'}catch(e){busy=e.message||'Tidak ada koneksi internet.'}
- render.k=1;render()}
+ if(GU.n>=G2.warn&&!await ask({t:'Penggunaan hari ini sudah banyak',b:`Sudah ${GU.n} permintaan hari ini (batas peringatan ${G2.warn}). Kuota gratis Google terbatas, dipakai bersama, dan bisa habis.`,k:'warn',a:[['Tetap lanjutkan',true,1],['Batal',false]]}))return;
+ ocring=true;
+ try{for(;;){
+  if(NET()){if(await errBox({net:1}))continue;break}
+  const st=$('#ost');if(st)st.textContent='Membaca '+files.length+' foto…';
+  try{const im=[];for(const f of files)im.push(await shrink(f));
+   if(im.reduce((a,x)=>a+x.length,0)>3400000)throw Object.assign(new Error('besar'),{s:413});
+   const j=await call({mode:'ocr',images:im});GU.n++;LS.s('gu',GU);const a=j.items||[];
+   if(!a.length){render.k=1;render();await ask({t:'Tidak ada teks terbaca',b:'Gemini tidak menemukan daftar barang di foto. Coba foto yang lebih terang, lurus, dan dekat.',k:'warn'});break}
+   scanTxt=(scanTxt.trim()?scanTxt.trim()+'\n':'')+a.join('\n');render.k=1;render();
+   if(await ask({t:'Foto berhasil dibaca',b:`${a.length} baris masuk ke kotak teks. Periksa dan perbaiki bila perlu sebelum dicocokkan.`,k:'ok',a:[['Cocokkan sekarang',true,1],['Periksa dulu',false]]}))await doMatch();
+   break}catch(e){if(!await errBox(e))break}}}
+ finally{ocring=false;const st=$('#ost');if(st)st.textContent=''}}
+async function tes(){for(;;){if(NET()){if(await errBox({net:1}))continue;return}
+ const st=$('#ost');if(st)st.textContent='Menguji koneksi…';
+ try{await call({mode:'ping'});if(GU.d!=today())GU={d:today(),n:0};GU.n++;LS.s('gu',GU);if(st)st.textContent='';await ask({t:'Koneksi berhasil',b:'Layanan baca foto siap dipakai.',k:'ok'});return}catch(e){if(st)st.textContent='';if(!await errBox(e))return}}}
+async function cpAll(){const lo=scan.filter(r=>r.sc<.5).length;
+ if(lo){const x=await ask({t:'Masih ada baris belum cocok',b:`${lo} baris berlabel rendah dan kodenya mungkin tidak sesuai. Periksa dulu sebelum disalin.`,k:'warn',a:[['Periksa dulu','chk',1],['Tetap salin semua','cp']]});if(x=='chk'){flt='chk';render.k=1;render();return}if(x!='cp')return}
+ copy(scan.map(r=>[r.raw,full(r.k,r.q),CM[r.k].n+' - '+CM[r.k].q.find(y=>y.c==r.q).n].join('\\t')).join('\\n'),'Semua baris tersalin')}
+const conf2=async(t,b,ok)=>{if(await ask({t,b,k:'warn',a:[['Hapus',true,1],['Batal',false]]}))ok()};
 const gset=()=>`<p class="mu">Maks foto per proses</p><select id="gx">${[1,3,5].map(n=>`<option ${n==G2.max?'selected':''}>${n}</option>`).join('')}</select><p class="mu">Peringatan setelah berapa permintaan per hari</p><input type="text" id="gw" inputmode="numeric" value="${G2.warn}">`;
 function V_guide(){const d=(t,b,o)=>`<details class="sc" ${o?'open':''}><summary><b>${t}</b></summary><div class="mu" style="margin-top:8px;font-size:14px;line-height:1.55">${b}</div></details>`;
 return d('Mulai cepat','Ketuk kolom <b>Cari</b> di Beranda, lalu ketik kode atau nama barang. Ketuk <b>Salin</b> pada kualitas yang sesuai, lalu tempel di isian kode. Untuk banyak barang sekaligus, pakai menu <b>Scan daftar</b>.',1)+
 d('Mencari kode','Ketik nama barang, merek, atau kode (7 digit komoditas, atau 10 digit lengkap). Hasil dibagi menjadi <b>Komoditas</b> dan <b>Kualitas</b>. Salah ketik dikoreksi otomatis, dan pesan "Menampilkan hasil untuk" menunjukkan kata yang dipakai. Ketuk baris untuk membuka komoditasnya, atau ketuk <b>Salin</b> untuk langsung menyalin kode.')+
-d('Telusur hierarki','Dari Beranda, ketuk salah satu kelompok di <b>Eksplorasi</b>, lalu turun ke subkelompok, kelas, komoditas, dan kualitas. Bagian <b>Sebelumnya</b> membawa Anda naik ke tingkat di atasnya. Untuk mundur, geser kembali di HP atau ketuk tombol ←.')+
+d('Telusur hierarki','Beranda dibagi dua: <b>A. Pengeluaran Konsumsi</b> (kode 01–11) dan <b>B. Pengeluaran Bukan Konsumsi</b> (kode 12). Ketuk salah satu kelompok untuk membaca <b>Deskripsi</b> cakupannya, lalu turun ke subkelompok, kelas, komoditas, dan kualitas. Tab <b>Deskripsi / Sebelumnya / Turunan</b> di bagian atas melompat ke bagiannya. Bagian <b>Sebelumnya</b> membawa Anda naik ke tingkat di atasnya. Untuk mundur, geser kembali di HP atau ketuk tombol ←.')+
 d('Menyalin kode','Ketuk baris kualitas atau tombol <b>Salin</b>. Kode lengkap terdiri dari kelompok (2 digit), subkelompok (1), kelas (1), komoditas (3), dan kualitas (3). Format salin diatur di <b>Pengaturan</b>: polos (0111001155) atau per komponen (01 1 1 001 155).')+
 d('Favorit dan riwayat','Ketuk ☆ di halaman komoditas untuk favorit komoditas, dan ☆ di baris kualitas untuk favorit kualitas. Lihat keduanya di menu <b>Favorit</b> (tab Komoditas dan Kualitas). Favorit kualitas juga tampil di Beranda: ketuk untuk langsung menyalin kodenya. Lima pencarian dan lima komoditas terakhir tampil di layar pencarian. Semua tersimpan di perangkat ini.')+
 d('Scan daftar teks','Tempel daftar barang di kotak teks, satu barang per baris. Boleh bernomor atau dipisah koma, maksimal 500 baris. Ketuk <b>Cocokkan</b>. Tiap baris diberi label <b>tinggi</b>, <b>sedang</b> (perlu dipilih), atau <b>rendah</b> (belum cocok). Anda bisa:<br>• memilih komoditas dan kualitas lewat kotak pilihan,<br>• mengetuk salah satu <b>Rekomendasi lain</b>,<br>• mengetuk <b>Cari lain</b> untuk mencari manual,<br>• memfilter <b>Perlu dicek</b> untuk melihat baris yang meragukan saja.<br><b>Salin semua</b> menyalin teks asli, kode, dan nama dalam kolom yang bisa ditempel ke spreadsheet. Mode ini jalan tanpa internet.')+
 d('Baca foto tulisan tangan atau nota','1. Di layar Scan, buka <b>Pengaturan layanan</b> lalu ketuk <b>Tes koneksi</b> untuk memastikan layanan siap.<br>2. Pilih foto (JPG, PNG, atau HEIC), maksimal sesuai pengaturan per proses.<br>3. Ketuk <b>Baca foto</b>. Hasil bacaan masuk ke kotak teks.<br>4. Periksa dan perbaiki teksnya, lalu ketuk <b>Cocokkan</b>.<br>Tips: foto terang, lurus, satu halaman, tulisan jelas. Jangan memotret nama atau alamat responden. Fitur ini butuh internet, dan kuota gratisnya terbatas dan dipakai bersama. Jika muncul pesan 429, coba lagi nanti atau besok.')+
 d('Tips agar hasil lebih akurat','Tulis nama barang beserta merek atau jenis, misalnya "indomie goreng" atau "beras rojolele". Buang kata yang tidak perlu. Selalu periksa baris berlabel sedang dan rendah. Untuk kasus meragukan, cocokkan dengan buku master.')+
+d('Pop-up dan peringatan','Pop-up muncul untuk hasil penting: foto gagal dibaca, tidak ada internet, batas kuota tercapai, peringatan privasi sebelum foto dikirim, jumlah foto berlebih, dan baris hasil scan yang perlu dicek. Tombol kembali HP menutup pop-up. Tindakan yang menghapus data selalu meminta konfirmasi.')+
 d('Offline dan layar utama','Setelah dibuka sekali saat ada internet, pencarian, telusur, favorit, dan daftar teks jalan tanpa internet. Hanya baca foto yang butuh internet. Untuk memasang: menu ⋮ di Chrome, lalu <b>Tambahkan ke layar utama</b>. Untuk memperbarui, tutup app sepenuhnya lalu buka lagi saat ada internet.')+
 d('Pengaturan','Pilih tema, layar awal, format salin kode, batas foto dan peringatan harian, serta hapus riwayat atau favorit.')+
 d('Catatan data','Data diambil otomatis dari PDF Buku 5 Master. Beberapa nama panjang bisa terpotong atau tergabung, dan beberapa kualitas bertulis "(tanpa nama)". Kode tetap dibaca. Jika ragu, cek ke PDF.')}
 function render(){document.documentElement.dataset.t=P.t;const s=cur(),root=TOP.includes(s.v),T={home:'Kode SPKRT 2027',fav:'Favorit',scan:'Scan daftar',guide:'Panduan',set:'Pengaturan',node:'Telusur',comm:'Komoditas'}[s.v];
  const body={home:V_home,fav:V_fav,scan:V_scan,guide:V_guide,set:V_set,node:()=>V_node(s.l,s.c),comm:()=>V_comm(s.k)}[s.v]();
- $('#app').innerHTML=`<header><button class="ib" data-a="menu" aria-label="Menu">☰</button>${root?'':'<button class="ib" data-a="back" aria-label="Kembali">←</button>'}<h1>${T}</h1><button class="ib" data-a="srch">${SI}</button></header><main>${body}</main>`;if(!render.k)window.scrollTo(0,0);render.k=0}
+ $('#app').innerHTML=`<header><button class="ib" data-a="menu" aria-label="Menu">☰</button>${root?'':'<button class="ib" data-a="back" aria-label="Kembali">←</button>'}<h1>${s.v=='home'?'<img class="lg" src="icon-192.png" alt="">':''}${T}</h1><button class="ib" data-a="srch">${SI}</button></header><main>${body}</main>`;if(!render.k)window.scrollTo(0,0);render.k=0}
 history.replaceState({d:0},'');
-function sync(){const t=lay();$('#dr').hidden=t.o!='dr';$('#sr').hidden=t.o!='sr';if(t.o!='sr')pick=null;if(!t.o){if(sync.w)render.k=1;render()}sync.w=!!t.o}
+function sync(){const t=lay();$('#dr').hidden=t.o!='dr';$('#sr').hidden=t.o!='sr';$('#md').hidden=t.o!='md';if(t.o!='sr')pick=null;if(t.o!='md'&&mdRes){const f=mdRes;mdRes=null;f(undefined)}if(!t.o&&sync.w!='md'){if(sync.w)render.k=1;render()}sync.w=t.o||''}
 function push(e){NAV.push(e);history.pushState({d:NAV.length-1},'');sync()}
 const go=s=>push(s),goBack=()=>{if(NAV.length>1)history.back()},after=f=>{pend=f;history.back()};
 window.addEventListener('popstate',e=>{const d=e.state&&e.state.d>=0?e.state.d:0;while(NAV.length>d+1)NAV.pop();sync();if(pend){const f=pend;pend=null;f()}});
-function drawer(){const n=[['home','Beranda'],['scan','Scan daftar'],['fav','Favorit ('+(FV.length+FQ.length)+')'],['guide','Panduan'],['set','Pengaturan']];push({o:'dr'});$('#dr').innerHTML=`<nav><b>Kode SPKRT</b><small>Master komoditas & kualitas 2027</small>${n.map(x=>`<div class="it ${cur().v==x[0]||(x[0]=='home'&&['node','comm'].includes(cur().v))?'on':''}" data-a="nav" data-v="${x[0]}">${x[1]}</div>`).join('')}</nav><div class="sh" data-a="shut"></div>`}
+function drawer(){const n=[['home','Beranda'],['scan','Scan daftar'],['fav','Favorit ('+(FV.length+FQ.length)+')'],['guide','Panduan'],['set','Pengaturan']];push({o:'dr'});$('#dr').innerHTML=`<nav><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><img class="lg" src="icon-192.png" alt="" style="height:42px;width:42px"><div><b>Kode SPKRT</b><br><small style="margin:0">Master komoditas & kualitas 2027</small></div></div>${n.map(x=>`<div class="it ${cur().v==x[0]||(x[0]=='home'&&['node','comm'].includes(cur().v))?'on':''}" data-a="nav" data-v="${x[0]}">${x[1]}</div>`).join('')}</nav><div class="sh" data-a="shut"></div>`}
 function openS(cb){pick=cb||null;const s=$('#sr');push({o:'sr'});s.innerHTML=`<div class="top"><input type="search" id="q" placeholder="Cari kode/nama komoditas, kualitas" autocomplete="off"><button data-a="cancel">BATAL</button></div><div id="sres"></div>`;$('#q').focus();sres()}
 function sres(){const q=$('#q').value,o=$('#sres');if(!q.trim()){o.innerHTML=(RQ.length?sec('PENCARIAN SEBELUMNYA')+`<div class="chips">${RQ.map(x=>`<button class="chip" data-a="rq" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>`:'')+(RC.length?sec('KOMODITAS DILIHAT SEBELUMNYA')+RC.map(k=>row(fc(k),CM[k].n,`data-a="rcomm" data-k="${k}"`)).join(''):'');return}
  const r=search(q);let h=r.fix?`<p class="mu">Menampilkan hasil untuk: <b>${esc(r.fix)}</b></p>`:'';
@@ -90,9 +121,11 @@ function sres(){const q=$('#q').value,o=$('#sres');if(!q.trim()){o.innerHTML=(RQ
  h+=r.q.length?sec(`KUALITAS (${r.nq})`)+r.q.map(y=>`<div class="row" data-a="rcomm" data-k="${y.c.k}"><b class="cd">${fc(y.c.k)} ${y.q.c}</b><span>${esc(y.c.n)} · ${esc(y.q.n)}</span><button class="st ${FQ.includes(y.c.k+y.q.c)?'on':''}" data-a="favq" data-t="${y.c.k+y.q.c}">${FQ.includes(y.c.k+y.q.c)?'★':'☆'}</button><button class="btn s" data-a="cp" data-t="${y.c.k+y.q.c}">Salin</button></div>`).join(''):'';
  o.innerHTML=h||'<p class="mu">Tidak ditemukan. Coba kata lain atau kode.</p>'}
 const shutS=()=>goBack();
-async function doMatch(){scanTxt=$('#stx').value;let L=scanTxt.split('\n');if(L.length==1&&(scanTxt.match(/[,;]/g)||[]).length>=2)L=scanTxt.split(/[,;]/);L=L.map(x=>x.replace(/^\s*(\d+[.)]|[-•*])\s*/,'').trim()).filter(Boolean);if(L.length>500){toast('Dibatasi 500 baris per proses');L=L.slice(0,500)}
+async function doMatch(){scanTxt=$('#stx').value;let L=scanTxt.split('\n');if(L.length==1&&(scanTxt.match(/[,;]/g)||[]).length>=2)L=scanTxt.split(/[,;]/);L=L.map(x=>x.replace(/^\s*(\d+[.)]|[-•*])\s*/,'').trim()).filter(Boolean);if(!L.length){await ask({t:'Daftar masih kosong',b:'Tempel atau ketik daftar barang dulu, satu barang per baris.',k:'info'});return}
+ if(L.length>500){if(!await ask({t:'Daftar terlalu panjang',b:`Ada ${L.length} baris. Maksimal 500 baris per proses, sisanya tidak diproses.`,k:'warn',a:[['Proses 500 baris pertama',true,1],['Batal',false]]}))return;L=L.slice(0,500)}
  scan=[];shown=25;flt='all';for(let i=0;i<L.length;i++){const m=matchLine(L[i]);if(m.length){const amb=m[1]&&m[0].sc>=.99&&m[1].sc>=m[0].sc-.001&&m[1].mc==m[0].mc&&Math.abs(m[1].tb-m[0].tb)<=1;scan.push({raw:L[i],k:m[0].x.k,q:m[0].q.c,sc:amb?.9:m[0].sc,cands:[...new Set(m.map(a=>a.x.k))],alts:m.slice(0,6).map(a=>[a.x.k,a.q.c])})}else scan.push({raw:L[i],k:CL[0].k,q:CL[0].q[0].c,sc:0,cands:[CL[0].k],alts:[]});if(i%10==9){$('#ost').textContent='Mencocokkan '+(i+1)+'/'+L.length+'…';await new Promise(r=>setTimeout(r))}}
- busy='';sv();render()}
+ busy='';sv();render();const lo=scan.filter(r=>r.sc<.5).length,sd=scan.filter(r=>r.sc>=.5&&r.sc<.99).length;
+ if(lo+sd){const x=await ask({t:`${lo+sd} dari ${scan.length} baris perlu dicek`,b:`${lo} baris belum cocok dan ${sd} baris perlu dipilih. Gunakan <b>Rekomendasi lain</b> atau <b>Cari lain</b>.`,k:'warn',a:[['Lihat yang perlu dicek','chk',1],['Tutup']]});if(x=='chk'){flt='chk';shown=25;render()}}else toast('Semua baris cocok. Tetap periksa sebelum disalin.')}
 document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!el||el.tagName=='SELECT'||el.tagName=='INPUT')return;const a=el.dataset.a,d=el.dataset;e.stopPropagation();
  if(a=='favq'){const t=d.t;FQ=FQ.includes(t)?FQ.filter(x=>x!=t):[t,...FQ];sv();if(d.r){render.k=1;render()}else{el.textContent=FQ.includes(t)?'★':'☆';el.classList.toggle('on',FQ.includes(t))}return}
  if(a=='ftab'){ftab=d.v;render();return}
@@ -106,15 +139,16 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-a]');if(!
  else if(a=='rq'){$('#q').value=d.q;sres()}
  else if(a=='fav'){FV=FV.includes(d.k)?FV.filter(x=>x!=d.k):[d.k,...FV];sv();render()}
  else if(a=='set'){P[d.p]=d.v;sv();render()}
- else if(a=='clr'){RQ=[];RC=[];sv();toast('Riwayat dihapus')}else if(a=='clrf'){FV=[];FQ=[];sv();toast('Favorit dihapus')}
+ else if(a=='clr')conf2('Hapus riwayat?','Pencarian dan komoditas terakhir akan dihapus.',()=>{RQ=[];RC=[];sv();toast('Riwayat dihapus')});else if(a=='clrf')conf2('Hapus semua favorit?','Favorit komoditas dan kualitas akan dihapus dan tidak bisa dikembalikan.',()=>{FV=[];FQ=[];sv();toast('Favorit dihapus')})
  else if(a=='match')doMatch();else if(a=='ocr')ocr();else if(a=='tes')tes();else if(a=='more'){shown+=25;render.k=1;render()}else if(a=='flt'){flt=d.v;shown=25;render()}
  else if(a=='rm'){scan.splice(+d.i,1);sv();render.k=1;render()}
- else if(a=='clrs'){scan=[];scanTxt='';sv();render()}
+ else if(a=='clrs')conf2('Kosongkan daftar?','Teks dan hasil pencocokan akan dihapus.',()=>{scan=[];scanTxt='';sv();render.k=1;render()})
  else if(a=='alt'){const i=+d.i;scan[i].k=d.k;scan[i].q=d.q;if(!scan[i].cands.includes(d.k))scan[i].cands.unshift(d.k);scan[i].sc=1;sv();render.k=1;render()}
  else if(a=='oth'){const i=+d.i;openS(k=>{scan[i].k=k;scan[i].q=CM[k].q[0].c;if(!scan[i].cands.includes(k))scan[i].cands.unshift(k);scan[i].sc=1;sv();render()})}
- else if(a=='cpall')copy(scan.map(r=>[r.raw,full(r.k,r.q),CM[r.k].n+' - '+CM[r.k].q.find(y=>y.c==r.q).n].join('\t')).join('\n'),'Semua baris tersalin')});
+ else if(a=='cpall')cpAll();else if(a=='mdc')mdDone(+d.v);else if(a=='mdx'){if(e.target===el)mdDone(null)}else if(a=='goto'){const t=document.getElementById(d.s);if(t)t.scrollIntoView({behavior:'smooth',block:'start'});document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b===el))}});
 document.addEventListener('change',e=>{const el=e.target,i=+el.dataset.i;if(el.id=='gx'){G2.max=+el.value;sv();return}if(el.id=='gw'){G2.warn=Math.max(1,+el.value||50);sv();return}if(el.dataset.a=='sk'){scan[i].k=el.value;scan[i].q=CM[el.value].q[0].c;scan[i].sc=Math.max(scan[i].sc,.5)}else if(el.dataset.a=='sq')scan[i].q=el.value;else return;sv();render.k=1;render()});
 document.addEventListener('input',e=>{if(e.target.id=='q')sres();else if(e.target.id=='stx')scanTxt=e.target.value;else if(e.target.id=='qf')$('#ql').innerHTML=qlist(e.target.dataset.k,e.target.value)});
-document.addEventListener('keydown',e=>{if(e.target.id=='q'&&e.key=='Enter'){const q=e.target.value.trim();if(q.length>1){RQ=bump(RQ,q);sv()}e.target.blur()}if(e.key=='Escape'&&lay().o=='sr')shutS()});
+document.addEventListener('keydown',e=>{if(e.target.id=='q'&&e.key=='Enter'){const q=e.target.value.trim();if(q.length>1){RQ=bump(RQ,q);sv()}e.target.blur()}if(e.key=='Escape'){if(lay().o=='md')mdDone(null);else if(lay().o=='sr')shutS()}});
 if(P.d!='home'&&TOP.includes(P.d)){NAV.push({v:P.d});history.pushState({d:1},'')}sync();
+addEventListener('offline',()=>toast('Anda offline. Pencarian tetap jalan; baca foto butuh internet.'));addEventListener('online',()=>toast('Kembali online'));
 if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
