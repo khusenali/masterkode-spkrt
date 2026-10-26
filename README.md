@@ -12,6 +12,7 @@ Dokumen ini ditujukan bagi developer yang ingin menjalankan atau menyalin proyek
 - **Salin kode satu ketuk**: format polos (`0111001155`) atau per komponen (`01 1 1 001 155`).
 - **Scan daftar teks**: tempel daftar barang (maksimal 500 baris), tiap baris dicocokkan ke kode, dengan label kecocokan dan rekomendasi alternatif. Jalan tanpa internet.
 - **Baca foto tulisan tangan atau nota** (JPG, PNG, HEIC) lewat Gemini. Hasilnya masuk ke kotak teks untuk diperiksa sebelum dicocokkan. Butuh internet.
+- **Referensi Ikan**: foto dan nama ikan serta hasil laut yang sulit dikenali (laut dan air tawar), dengan pencarian dan tautan ke kode di master.
 - Tombol kembali HP bekerja di dalam app, pop-up untuk galat dan peringatan, 4 tema, menu Panduan.
 
 ## Arsitektur
@@ -34,6 +35,9 @@ Key Gemini **tidak pernah** ada di kode app atau di repositori. Browser hanya be
 | `core.js` | Mesin pencarian dan pencocokan baris (tanpa dependensi) |
 | `data.js` | Data master (`const D=...`) |
 | `desc.js` | Deskripsi kelompok (`const DESC=...`) |
+| `ikan.js` | Data referensi ikan (`const IKAN=...`), dibuat dari Excel dengan `tools/build_ikan.py` |
+| `ikan/` | Foto referensi ikan, satu file `<ID>.webp` per entri |
+| `tools/build_ikan.py` | Membuat `ikan.js` dari file Excel daftar ikan |
 | `config.js` | Alamat Worker (`const CFG={proxy:'...'}`) |
 | `style.css` | Tema dan gaya |
 | `sw.js` | Service worker (cache untuk offline) |
@@ -205,6 +209,25 @@ Kode lengkap adalah kode komoditas (7 digit) ditambah kode kualitas (3 digit), t
 
 Data di repositori ini diekstrak otomatis dari PDF Buku 5 Master. Hasil ekstraksi bisa memuat nama panjang yang terpotong atau tergabung. Periksa terhadap sumber resmi sebelum dipakai untuk pekerjaan penting.
 
+## Referensi Ikan
+
+Data dikelola di Excel (kolom ID, Habitat, Kategori, Nama Indonesia (utama), Nama Indonesia lain, Nama ilmiah, Nama Inggris, Ukuran maks, Ukuran umum, Nama lokal, Komoditas master). Setelah mengubah Excel, buat ulang `ikan.js`:
+
+```bash
+pip install openpyxl
+python3 tools/build_ikan.py daftar_referensi_ikan.xlsx app/ikan.js
+```
+
+Ketentuan kolom:
+
+- **ID** menghubungkan baris dengan foto `app/ikan/<ID>.webp`. Jangan diubah. Baris baru membutuhkan foto baru dengan ID yang sama.
+- **Habitat**: kata "tawar" berarti air tawar, selain itu dianggap laut.
+- **Kategori**: `ikan`, `krustasea`, atau `moluska`.
+- **Nama lain** dan **Nama lokal**: pisahkan dengan titik koma. Nama lokal ikut dicari.
+- **Komoditas master**: tulis kode komoditas 7 digit di awal, misalnya `0113025 IKAN KERAPU`. Beberapa dipisah titik koma. Jika diisi dan kodenya ada di master, halaman detail menampilkan tautan ke komoditas itu.
+
+Foto dikecilkan ke lebar 560 px (WebP). Semua foto disimpan di cache agar bisa dibuka tanpa internet. Setelah mengubah data atau foto, naikkan versi `spkrt-vN` di `sw.js`, dan perbarui juga daftar foto `P` di dalamnya jika ada foto baru.
+
 ## Memperbarui app yang sudah terpasang
 
 Setiap kali file berubah, naikkan nomor versi cache di `sw.js`, misalnya `spkrt-v6` menjadi `spkrt-v7`. Tanpa itu, HP yang sudah memasang app tetap memakai cache lama. Setelah mengunggah, pengguna menutup app sepenuhnya lalu membukanya lagi saat ada internet.
@@ -227,7 +250,8 @@ Setiap kali file berubah, naikkan nomor versi cache di `sw.js`, misalnya `spkrt-
 - Pemeriksaan `Origin` hanya melindungi dari browser. Program di luar browser bisa memalsukan header itu. Aktifkan KV untuk batas harian, pantau kuota di AI Studio, dan ganti key jika dicurigai bocor.
 - Semua pengguna berbagi satu kuota Gemini. Kuota gratis kecil dan bisa berubah.
 - Repositori Public membuat semua file, termasuk data master, dapat diunduh siapa saja. Pastikan Anda berhak menerbitkan data tersebut.
-- Foto responden atau data pribadi sebaiknya tidak difoto. Hasil baca foto selalu perlu diperiksa manual.
+- Foto responden atau data pribadi sebaiknya tidak difoto. Foto di folder `ikan/` berasal dari materi pihak lain, jadi pastikan hak penerbitannya sebelum repositori dibuat Public.
+- Footer app memuat "Copyright © BPS Kabupaten Raja Ampat". Ubah teksnya di `app.js` (kata `footer class="cp"` dan `cp2`) bila instansi berbeda. Hasil baca foto selalu perlu diperiksa manual.
 
 ## Sumber data
 
