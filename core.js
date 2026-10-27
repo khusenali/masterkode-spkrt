@@ -34,3 +34,25 @@ function matchLine(raw){
   if(qs.length)qs.sort((a,b)=>a.n.length-b.n.length).slice(0,3).forEach(q=>r.push({x,q,sc,mc,ex:toks.filter(w=>(x.t+q.t+' ').includes(' '+w+' ')).length,tb:x.n.length+q.n.length}));
   else r.push({x,q:x.q[0],sc,mc,ex:toks.filter(w=>(x.t+' ').includes(' '+w+' ')).length,tb:x.n.length+60})}
  return r.sort((a,b)=>b.sc-a.sc||b.ex-a.ex||b.mc-a.mc||a.tb-b.tb).slice(0,8)}
+/* ---- Saran kode untuk Referensi Ikan ---- */
+const PROC=/DIAWETKAN|ASIN|BEKU|KALENG|ASAP|PANGGANG|BAKSO|NUGGET|SOSIS|GILING|KERING|TEMPURA|OTAK|PEDA|SALAI|MANGUT|SURIMI|ROLL|CAVIAR|MENTAH|ANAK|CAMPUR|LAINNYA|TELUR/,STOP=['ikan','basah','segar','iwak'],GEN=['merah','putih','hitam','kuning','biru','laut','sungai','besar','kecil','sedang','hijau'];
+const toks=s=>nz(String(s||'').replace(/^\s*U\.\s+/i,'Udang ')).split(' ').filter(w=>w&&!STOP.includes(w));
+const teq=(a,b)=>a==b||(a.length>=5&&b.length>=5&&Math.abs(a.length-b.length)<=2&&lev(a,b)<=(Math.min(a.length,b.length)>=8?2:1));
+const has2=(tk,alt)=>alt.every(w=>tk.some((x,i)=>x==w||(i==0&&x[0]==w[0]&&teq(x,w))));
+let FP=null;const fpool=()=>FP||(FP=CL.filter(c=>c.k.startsWith('0113')&&!PROC.test(c.n)).map(c=>({c,alts:c.n.split('/').map(toks).filter(t=>t.length)})));
+function hitsFor(names){let out=[];for(const nm of names){const tk=toks(nm);if(!tk.length)continue;for(const p of fpool())for(const alt of p.alts)if(has2(tk,alt))out.push({c:p.c,alt,tk,ex:alt.every(w=>tk.includes(w)),sp:alt.length+(tk.length==alt.length?.5:0)})}
+ if(out.some(h=>h.ex))out=out.filter(h=>h.ex);
+ out.sort((a,b)=>b.sp-a.sp||a.c.n.length-b.c.n.length);const seen=new Set(),r=[];for(const h of out){if(seen.has(h.c.k))continue;if(r.length&&h.sp<r[0].sp)break;seen.add(h.c.k);r.push(h);if(r.length>=2)break}return r}
+function qualOf(h){const rem=h.tk.filter(w=>!h.alt.some(a=>teq(a,w)));if(!rem.length)return[];return h.c.q.filter(y=>rem.every(w=>y.t.includes(' '+w)||nz(y.n).split(' ').some(z=>teq(z,w)))).slice(0,2)}
+const genus=e=>String(e.s||'').trim().split(/\s+/)[0].toLowerCase();
+function baseHits(e){return e._b||(e._b=(()=>{let h=hitsFor(e.n),src='nama';if(!h.length){h=hitsFor(String(e.e||'').split(/[,;]/));src='inggris'}return{h,src}})())}
+function similar(e){const tk=[...new Set(e.n.flatMap(toks))].filter(w=>w.length>=5&&!GEN.includes(w)),out=[];
+ for(const p of fpool())for(const alt of p.alts){const m=alt.filter(w=>tk.some(x=>teq(x,w)));if(m.length&&m.length<alt.length){out.push({c:p.c,q:[],src:'mirip',sc:m.length/alt.length});break}}
+ return out.sort((a,b)=>b.sc-a.sc||a.c.n.length-b.c.n.length).slice(0,3)}
+function fishSuggest(e){if(e._sg)return e._sg;let res=[];const man=(e.kom||[]).filter(k=>CM[k]);
+ if(man.length)res=man.map(k=>{const c=CM[k],h=hitsFor(e.n).find(x=>x.c.k==k);return{c,q:h?qualOf(h):qualOf({c,alt:toks(c.n.split('/')[0]),tk:toks(e.n[0])}),src:'manual'}});
+ else{const b=baseHits(e);if(b.h.length)res=b.h.map(h=>({c:h.c,q:qualOf(h),src:b.src,fz:!h.ex}));
+  if(!res.length){const gk=genus(e),mem=gk?IKAN.filter(x=>x!==e&&x.k==e.k&&genus(x)==gk):[];if(mem.length){const cnt={};for(const m of mem){const hh=baseHits(m).h[0];if(hh)cnt[hh.c.k]=(cnt[hh.c.k]||0)+1}const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];if(best&&best[1]>=Math.max(2,Math.ceil(mem.length/2)))res=[{c:CM[best[0]],q:[],src:'kelompok',g:gk[0].toUpperCase()+gk.slice(1)}]}}
+  if(!res.length&&e.lok&&e.lok.length)res=hitsFor(e.lok).map(h=>({c:h.c,q:qualOf(h),src:'lokal',fz:!h.ex}));
+  if(!res.length)res=similar(e)}
+ return e._sg=res}
