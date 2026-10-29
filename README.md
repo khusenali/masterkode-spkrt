@@ -38,6 +38,7 @@ Key Gemini **tidak pernah** ada di kode app atau di repositori. Browser hanya be
 | `ikan.js` | Data referensi ikan (`const IKAN=...`), dibuat dari Excel dengan `tools/build_ikan.py` |
 | `ikan/` | Foto referensi ikan, satu file `<ID>.webp` per entri |
 | `tools/build_ikan.py` | Membuat `ikan.js` dari file Excel daftar ikan |
+| `tools/statistik.html` | Halaman lokal untuk melihat statistik pemakaian baca foto dan menghitung batas yang disarankan (jangan diunggah ke GitHub Pages) |
 | `config.js` | Alamat Worker (`const CFG={proxy:'...'}`) |
 | `style.css` | Tema dan gaya |
 | `sw.js` | Service worker (cache untuk offline) |
@@ -68,7 +69,7 @@ Catatan privasi: pada tier gratis, Google dapat memakai data permintaan untuk me
 2. Pilih **Start with Hello World!**. Beri nama, misalnya `spkrt-gemini`, lalu **Deploy**.
 3. Klik **Edit code**. Hapus semua kode contoh, tempel seluruh isi `worker/worker.js`, lalu **Deploy**.
 4. Buka **Settings → Variables and Secrets** dan tambahkan variabel di bawah.
-5. (Opsional, disarankan) Aktifkan batas harian per IP: buat KV namespace di **Storage & Databases → KV**, lalu di Worker buka **Settings → Bindings → Add → KV namespace** dengan variable name `KV`.
+5. (Disarankan) Pasang penyimpanan hitungan pemakaian. Pilihan terbaik **D1**: buat database di **Storage & Databases → D1** (nama bebas, misalnya `spkrt-usage`), lalu di Worker buka **Settings → Bindings → Add → D1 database** dengan variable name `DB`. Tabel dibuat otomatis. Alternatif **KV** (lebih sederhana tetapi hanya perkiraan, dan batas tulis harian paket gratisnya kecil): binding KV namespace dengan variable name `KV`.
 6. Salin alamat Worker, bentuknya `https://spkrt-gemini.<subdomain-anda>.workers.dev`.
 
 Nama menu di dashboard Cloudflare bisa berubah dari waktu ke waktu.
@@ -81,8 +82,12 @@ Nama menu di dashboard Cloudflare bisa berubah dari waktu ke waktu.
 | `GEMINI_MODEL` | Text | Ya | Nama model, misalnya `gemini-3.1-flash-lite` |
 | `ALLOWED_ORIGIN` | Text | Disarankan | Alamat asal app, misalnya `https://username.github.io`. Hanya domain, **tanpa** nama repositori dan **tanpa** garis miring di akhir. Jika kosong, semua asal diizinkan |
 | `MAX_IMAGES` | Text | Tidak | Maksimal foto per permintaan. Bawaan 5 |
-| `DAILY_LIMIT` | Text | Tidak | Maksimal permintaan per IP per hari. Bawaan 30. Hanya aktif jika `KV` terpasang |
-| `KV` | Binding KV | Tidak | Menyimpan hitungan harian per IP |
+| `DEVICE_LIMIT` | Text | Tidak | Maksimal proses foto per HP per hari. `0` atau kosong berarti tanpa batas (mode uji coba, hanya menghitung). Perlu `DB` atau `KV` |
+| `GLOBAL_LIMIT` | Text | Tidak | Maksimal proses foto per hari untuk semua HP. Disarankan sekitar 80% dari kuota harian model. `0` atau kosong berarti tanpa batas |
+| `MIN_INTERVAL` | Text | Tidak | Jeda minimal antar proses foto per HP, dalam detik. `0` atau kosong berarti tanpa jeda |
+| `ADMIN_KEY` | Secret | Tidak | Kunci pengelola untuk mengambil statistik (`tools/statistik.html`) |
+| `DB` | Binding D1 | Disarankan | Penyimpanan hitungan pemakaian (akurat) |
+| `KV` | Binding KV | Alternatif | Penyimpanan hitungan pemakaian (perkiraan). Dipakai jika `DB` tidak ada |
 | `ACCESS_CODE` | Secret | Tidak | Kode akses yang dicek lewat header `X-Access-Code`. **App bawaan tidak mengirim kode**, jadi biarkan kosong kecuali Anda menambahkan input kode di `app.js`. Jika terisi tanpa perubahan itu, semua permintaan ditolak (401) |
 
 ### Alternatif: lewat Wrangler (CLI)
@@ -105,9 +110,16 @@ compatibility_date = "2026-10-25"
 GEMINI_MODEL = "gemini-3.1-flash-lite"
 ALLOWED_ORIGIN = "https://username.github.io"
 MAX_IMAGES = "5"
-DAILY_LIMIT = "30"
+DEVICE_LIMIT = "0"        # isi setelah masa uji coba
+GLOBAL_LIMIT = "0"
+MIN_INTERVAL = "0"
 
-# Opsional: batas harian per IP
+# Opsional: hitungan pemakaian (pilih salah satu)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "spkrt-usage"
+# database_id = "ID_D1_ANDA"
+#
 # [[kv_namespaces]]
 # binding = "KV"
 # id = "ID_KV_ANDA"
@@ -169,6 +181,27 @@ python3 -m http.server 8000
 
 Agar baca foto bisa diuji dari alamat lokal, ubah sementara `ALLOWED_ORIGIN` di Worker menjadi `http://localhost:8000`, atau kosongkan variabel itu selama pengujian.
 
+## Batas pemakaian dan masa uji coba
+
+Baca foto memakai kuota gratis Gemini yang dipakai bersama semua pengguna, jadi perlu batas. Setiap HP membuat ID acak (tanpa nama) yang disimpan di browser dan dikirim lewat header `X-Device-Id`. Worker menghitung pemakaian per HP dan total harian, memakai "hari" menurut zona waktu Pasifik karena kuota Gemini pulih pukul 00.00 waktu Pasifik.
+
+Alur yang disarankan:
+
+1. **Uji coba**: pasang `DB` (atau `KV`) dan `ADMIN_KEY`, biarkan `DEVICE_LIMIT`, `GLOBAL_LIMIT`, dan `MIN_INTERVAL` kosong. Worker hanya menghitung.
+2. Setelah 2–3 hari, buka `tools/statistik.html` di komputer, isi alamat Worker dan `ADMIN_KEY`, lalu lihat jumlah proses, HP aktif, serta median, p90, dan maksimum pemakaian per HP. Panel kedua di halaman itu menghitung batas yang disarankan dari kuota model, jumlah petugas, dan persen pengguna foto.
+3. Isi `DEVICE_LIMIT`, `GLOBAL_LIMIT`, dan `MIN_INTERVAL` di Worker (tanpa mengubah app). Pastikan batas per HP tidak lebih kecil dari p90 hasil uji coba.
+4. Setelah batas aktif, app menampilkan sisa jatah per HP, dan pesan berisi perkiraan jam pulih saat batas atau kuota habis.
+
+Statistik lewat terminal:
+
+```bash
+curl -s -X POST https://spkrt-gemini.<subdomain>.workers.dev \
+  -H "X-Admin-Key: KUNCI_PENGELOLA" -H "Content-Type: application/json" \
+  -d '{"mode":"stats","days":3}'
+```
+
+Catatan: ID HP dibuat acak dan tidak mengidentifikasi orang, tetapi menghapus data browser membuat HP dihitung sebagai perangkat baru. Karena itu batas global dan batas per IP tetap berguna sebagai pengaman tambahan.
+
 ## Kontrak API Worker
 
 `POST` ke alamat Worker, `Content-Type: application/json`.
@@ -186,7 +219,7 @@ Foto dikirim sebagai base64 JPEG (app memperkecilnya ke sisi terpanjang 1600 px 
 | 401 | `ACCESS_CODE` terisi dan header tidak cocok |
 | 403 | Header `Origin` tidak sama dengan `ALLOWED_ORIGIN` |
 | 413 | Satu foto terlalu besar |
-| 429 | Batas harian per IP atau kuota Gemini habis |
+| 429 | Salah satu dari: batas per HP tercapai (`batas perangkat`), batas global tercapai (`kuota layanan`), terlalu cepat (`jeda`, dengan `retryAfter` detik), atau kuota Gemini habis (`gemini`). Body JSON memuat `reset` (waktu pulih, milidetik epoch) |
 | 500 | `GEMINI_KEY` atau `GEMINI_MODEL` belum diatur |
 | 502 | Gemini gagal atau hasilnya tidak terbaca |
 
@@ -226,6 +259,8 @@ Ketentuan kolom:
 - **Nama lain** dan **Nama lokal**: pisahkan dengan titik koma. Nama lokal ikut dicari.
 - **Komoditas master**: tulis kode komoditas 7 digit di awal, misalnya `0113025 IKAN KERAPU`. Beberapa dipisah titik koma. Jika diisi dan kodenya ada di master, halaman detail menampilkan tautan ke komoditas itu.
 
+**Saran kode SPKRT.** Halaman detail ikan menyarankan komoditas di master (kelas 0113) secara otomatis, tanpa Excel. Urutan pencocokan: nama Indonesia, nama Inggris, ikan sejenis (genus yang sama, bila mayoritas cocok ke satu komoditas), nama lokal, lalu yang hanya mirip. Jika master punya kualitas khusus untuk jenis itu (misalnya Ikan Bawal dengan kualitas Hitam atau Putih), kode kualitasnya ikut disarankan. Jika master hanya punya satu komoditas untuk banyak jenis (misalnya Ikan Tuna), komoditas itulah yang disarankan. Kolom **Komoditas master** di Excel, bila diisi, didahulukan. Produk olahan (diawetkan, asin, beku, kaleng, dan sejenisnya) tidak disarankan. Logikanya ada di `core.js` (fungsi `fishSuggest`). Di Scan daftar, baris yang tidak cocok ke master tetapi dikenali sebagai ikan di Referensi Ikan memakai saran yang sama.
+
 Foto dikecilkan ke lebar 560 px (WebP). Semua foto disimpan di cache agar bisa dibuka tanpa internet. Setelah mengubah data atau foto, naikkan versi `spkrt-vN` di `sw.js`, dan perbarui juga daftar foto `P` di dalamnya jika ada foto baru.
 
 ## Memperbarui app yang sudah terpasang
@@ -239,7 +274,7 @@ Setiap kali file berubah, naikkan nomor versi cache di `sw.js`, misalnya `spkrt-
 | "Layanan belum diatur" | `config.js` belum berisi alamat Worker |
 | 403 Akses ditolak | `ALLOWED_ORIGIN` tidak persis sama dengan alamat asal app (periksa `https`, tanpa jalur repositori, tanpa garis miring akhir) |
 | 401 Akses ditolak | Variabel `ACCESS_CODE` masih ada di Worker. Hapus |
-| 429 Batas penggunaan | Kuota gratis Gemini atau `DAILY_LIMIT` tercapai. Tunggu atau coba besok |
+| 429 Batas penggunaan | `DEVICE_LIMIT`, `GLOBAL_LIMIT`, jeda, atau kuota Gemini tercapai. App menampilkan pesan dan perkiraan jam pulih. Kuota harian Gemini pulih pukul 00.00 waktu Pasifik |
 | 502 Layanan bermasalah | Nama model salah atau sudah dihapus Google, key salah, atau Gemini sedang bermasalah. Periksa `GEMINI_MODEL`, lalu jalankan Tes koneksi |
 | Galat CORS di konsol browser | Worker belum dipasang, alamat di `config.js` salah, atau `ALLOWED_ORIGIN` tidak cocok |
 | Tampilan app masih versi lama | Cache belum diperbarui. Naikkan versi di `sw.js`, unggah, lalu tutup dan buka lagi app |
@@ -247,7 +282,7 @@ Setiap kali file berubah, naikkan nomor versi cache di `sw.js`, misalnya `spkrt-
 
 ## Keamanan dan batasan
 
-- Pemeriksaan `Origin` hanya melindungi dari browser. Program di luar browser bisa memalsukan header itu. Aktifkan KV untuk batas harian, pantau kuota di AI Studio, dan ganti key jika dicurigai bocor.
+- Pemeriksaan `Origin` hanya melindungi dari browser. Program di luar browser bisa memalsukan header itu. Pasang `DB` (atau `KV`) dan atur `DEVICE_LIMIT` serta `GLOBAL_LIMIT`, pantau kuota di AI Studio, dan ganti key jika dicurigai bocor.
 - Semua pengguna berbagi satu kuota Gemini. Kuota gratis kecil dan bisa berubah.
 - Repositori Public membuat semua file, termasuk data master, dapat diunduh siapa saja. Pastikan Anda berhak menerbitkan data tersebut.
 - Foto responden atau data pribadi sebaiknya tidak difoto. Foto di folder `ikan/` berasal dari materi pihak lain, jadi pastikan hak penerbitannya sebelum repositori dibuat Public.
