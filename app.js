@@ -68,6 +68,7 @@ function errInfo(e){const s=e.s;
  if(s==429){const j=e.j||{};
   if(j.error=='batas perangkat')return{t:'Batas hari ini tercapai',b:`Anda sudah memakai ${j.used} dari ${j.limit} proses foto hari ini. Bisa lagi sekitar <b>${rt(j.reset)}</b>.`+ALT};
   if(j.error=='kuota layanan'||j.error=='gemini')return{t:'Kuota layanan hari ini habis',b:`Kuota baca foto yang dipakai bersama sedang habis. Pulih sekitar <b>${rt(j.reset)}</b>.`+ALT};
+  if(j.error=='gemini menit')return{t:'Layanan sedang ramai',b:`Banyak petugas memakai baca foto bersamaan. Coba lagi sekitar <b>${j.retryAfter} detik</b>.`,r:1};
   if(j.error=='jeda')return{t:'Tunggu sebentar',b:`Beri jeda sekitar <b>${j.retryAfter} detik</b> antar proses foto, lalu coba lagi.`,r:1};
   return{t:'Batas penggunaan tercapai',b:'Kuota gratis (per menit atau per hari) sedang habis dan dipakai bersama semua pengguna. Tunggu beberapa menit atau coba lagi besok.'+ALT}}
  if(s==413||s==400)return{t:'Foto terlalu besar atau terlalu banyak',b:'Kurangi jumlah foto atau pilih foto yang lebih kecil, lalu coba lagi.'};
