@@ -24,6 +24,7 @@ function fixToks(q,o){o=o||{};ALLT();const fx=[];const a1=nz(q).split(' ').filte
   sug.push({t,o:c,on:null});return t});
  return{toks,f,fx,sug,bk}}
 const DF={};CL.forEach(c=>{const st=new Set(c.t.trim().split(' '));c.q.forEach(y=>y.t.trim().split(' ').forEach(w=>st.add(w)));st.forEach(w=>{if(w)DF[w]=(DF[w]||0)+1})});
+const QC={};CL.forEach(x=>x.q.forEach(y=>{const k=y.t.trim();(QC[k]=QC[k]||new Set()).add(x.k)}));
 const idf=w=>Math.log(1+CL.length/(DF[w]||1));
 const hit=(t,tk)=>tk.every(w=>t.includes(' '+w));
 function search(q){
@@ -50,18 +51,19 @@ function altU(x){const l=alts(x);return x._au||(x._au=l.length>1?[...l,{w:[...ne
 function score2(toks,x,y,cap){const T=toks.length;let best=null;
  for(const a of altU(x)){let m=0,D=a.w.length;const rest=[],r2=[];for(const t of toks){if(sw(a.w,t))m++;else rest.push(t)}
   for(const t of rest){if(sw(a.p,t)){m++;D++}else r2.push(t)}
-  let mq=0,qx=0;if(y){const w=qw(y);for(const t of r2)if(sw(w,t))mq++;if(mq)qx=w.filter(v=>!r2.some(t=>v.startsWith(t))).length}
+  let mq=0,qx=0,qe=false;if(y){const w=qw(y);for(const t of r2)if(sw(w,t))mq++;if(mq)qx=w.filter(v=>!r2.some(t=>v.startsWith(t))).length;qe=mq>0&&QC[y.t.trim()].size==1&&w.every(v=>toks.some(t=>v.startsWith(t)))&&toks.every(t=>sw(w,t))}
   const tot=m+mq;if(!tot)continue;const Dd=D+mq,ratio=tot/Math.max(T,Dd),nx=a.w.filter(v=>!toks.some(t=>v.startsWith(t))).length,full=tot==T;
-  /* tinggi: semua kata input ada di nama komoditas, atau nama komoditas utuh tercakup input (+ kualitas). sedang: kata cocok sebagian atau hanya lewat kualitas pada komoditas yang berbeda. */
-  const st=full?(mq==0||nx==0?1:Math.max(.5,Math.min(.9,ratio))):Math.min(.9,ratio),kd=full&&(nx>0||qx>0);
+  /* tinggi: semua kata input cocok DAN (nama komoditas tidak punya kata lebih, atau input persis sama dengan nama kualitas yang hanya ada di satu komoditas). Selain itu sedang (>= .5) atau rendah. kd = semua kata input cocok tetapi hasil punya kata tambahan. */
+  const st=full&&(nx==0||qe)?1:full?Math.max(.5,Math.min(.9,ratio)):Math.min(.9,ratio),kd=full&&(nx>0||qx>0);
   if(!best||st>best.st||(st==best.st&&(kd?1:0)<(best.kd?1:0))||(st==best.st&&kd==best.kd&&nx<best.nx))best={st,kd,nx,m}}
  return best?{sc:Math.min(cap,best.st),kd:best.kd,mc:best.m,nx:best.nx}:null}
 function pairInfo(raw,k,q){const a=analyze(raw),x=CM[k];if(!x||!a.toks.length)return{sc:0,kd:false};const s=score2(a.toks,x,x.q.find(z=>z.c==q),a.cap);return s?{sc:s.sc,kd:s.kd}:{sc:0,kd:false}}
 function matchLine(raw){
  const a=analyze(raw),toks=a.toks,out=[];out.a=a;if(!toks.length)return out;
  const pr=x=>(x.t.startsWith(' '+toks[0])?0:2)+(x.k[0]=='0'?0:1);
- for(const x of CL){const b=score2(toks,x,null,a.cap);if(!b)continue;
+ for(const x of CL){const b=score2(toks,x,null,a.cap);
   const al=altU(x),rest=toks.filter(t=>!al.some(q=>sw(q.w,t)||sw(q.p,t)));let bm=0,qs=[];if(rest.length)for(const y of x.q){let n=0;const w=qw(y);for(const t of rest)if(sw(w,t))n++;if(n>bm){bm=n;qs=[y]}else if(n&&n==bm)qs.push(y)}
+  if(!b&&!qs.length)continue;
   const ws=toks.reduce((s,w)=>s+((x.t+(qs[0]?qs[0].t:'')).includes(' '+w)?idf(w):0),0);
   const push=(y,tb)=>{const s=score2(toks,x,y,a.cap);out.push({x,q:y,sc:s.sc,kd:s.kd,nx:s.nx,mc:s.mc,ws,ex:toks.filter(w=>(x.t+(y.t||'')+' ').includes(' '+w+' ')).length,tb,pr:pr(x)})};
   if(qs.length)qs.sort((p,q)=>p.n.length-q.n.length).slice(0,3).forEach(y=>push(y,x.n.length+y.n.length));else push(x.q[0],x.n.length+60)}
