@@ -7,12 +7,22 @@ const V=[...VS].sort();
 const has=t=>{let lo=0,hi=V.length;while(lo<hi){const m=(lo+hi)>>1;if(V[m]<t)lo=m+1;else hi=m}return lo<V.length&&V[lo].startsWith(t)};
 const lev=(a,b)=>{let p=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]};
 const near=t=>{const mx=t.length<=4?1:2;let b=null,bd=9;for(const w of V){if(Math.abs(w.length-t.length)>mx)continue;const d=lev(t,w);if(d<bd||(d===bd&&b&&w.length<b.length)){bd=d;b=w}}return bd<=mx?b:null};
-const AL={telor:'telur',cabe:'cabai',cabai_:'cabai',galon_:'galon',odol:'pasta gigi',hp:'telepon seluler'};
+const AL={ijo:'hijau',item:'hitam',abang:'merah',telor:'telur',cabe:'cabai',cabai_:'cabai',galon_:'galon',odol:'pasta gigi',hp:'telepon seluler'};
 const LOC={asar:'asap'};
 const PF=['peng','meng','pem','men','mem','per','ber','ter','pe','me','di','se','ke',''],SF=['nya','kan','an','i',''];
 function derive(t){for(const a of PF)if(t.startsWith(a))for(const b of SF){if(!a&&!b)continue;if(b&&!t.endsWith(b))continue;const r=t.slice(a.length,t.length-b.length);if(r.length>=4&&has(r))return r}return null}
-function kamus(arr,fx){if(typeof KAM=='undefined')return arr;const mk=arr.map(()=>0);for(const[k,v]of KAM){const kt=k.split(' '),vt=v.split(' ');for(let i=0;i+kt.length<=arr.length;i++){if(mk[i]||kt.some((w,j)=>arr[i+j]!==w||mk[i+j]))continue;if(k!==v)fx.push([k,v]);arr.splice(i,kt.length,...vt);mk.splice(i,kt.length,...vt.map(()=>1));i+=vt.length-1}}return arr}
-function fixToks(q){let f=false;const fx=[];q=nz(q).split(' ').map(w=>AL[w]||w).join(' ');if(q)q=kamus(q.split(' '),fx).join(' ');if(fx.length)f=true;const toks=nz(q).split(' ').filter(Boolean).map(t=>{if(LOC[t]){f=true;fx.push([t,LOC[t]]);return LOC[t]}if(/\d/.test(t)||has(t))return t;const d=derive(t);if(d){f=true;fx.push([t,d]);return d}const n=near(t);if(n){f=true;fx.push([t,n]);return n}return t});return{toks,f,fx}}
+function kamus(arr,fx){if(typeof KAM=='undefined')return arr;const mk=arr.map(()=>0);for(const[k,v]of KAM){const kt=k.split(' '),vt=v.split(' ');for(let i=0;i+kt.length<=arr.length;i++){if(mk[i]||kt.some((w,j)=>arr[i+j]!==w||mk[i+j]))continue;if(k!==v)fx.push([k,v,'k']);arr.splice(i,kt.length,...vt);mk.splice(i,kt.length,...vt.map(()=>1));i+=vt.length-1}}return arr}
+const nearAll=t=>{const mx=t.length<=4?1:2,o=[];for(const w of V){if(Math.abs(w.length-t.length)>mx)continue;const d=lev(t,w);if(d<=mx)o.push([d,w])}o.sort((a,b)=>a[0]-b[0]||(DF[b[1]]||0)-(DF[a[1]]||0)||a[1].length-b[1].length);return o.slice(0,3).map(x=>x[1])};
+const ALLT=()=>CL.all||(CL.all=1,CL.forEach(x=>{x.all=x.t+x.q.map(y=>y.t).join('')}),1);
+function fixToks(q,o){o=o||{};ALLT();const fx=[];const a1=nz(q).split(' ').filter(Boolean).map(w=>{const b=AL[w];if(b&&b!==w){fx.push([w,b,'b']);return b}return w}),bk=fx.length?a1.join(' '):'';
+ const arr=kamus(a1.join(' ').split(' ').filter(Boolean),fx),sug=[],st=arr.map(t=>(/\d/.test(t)||has(t))?1:0);let f=fx.length>0;
+ const toks=arr.map((t,i)=>{if(st[i])return t;const d=derive(t);if(d){f=true;fx.push([t,d,'t']);return d}
+  const c=nearAll(t);if(!c.length)return t;const oth=arr.filter((u,j)=>j!=i&&st[j]&&!/^\d+$/.test(u));let pick=null;
+  if(oth.length)pick=c.find(w=>CL.some(x=>x.all.includes(' '+w)&&oth.every(u=>x.all.includes(' '+u))))||null;
+  if(!pick&&o.loose)pick=c[0];
+  if(pick){f=true;fx.push([t,pick,'t']);sug.push({t,o:c,on:pick});return pick}
+  sug.push({t,o:c,on:null});return t});
+ return{toks,f,fx,sug,bk}}
 const DF={};CL.forEach(c=>{const st=new Set(c.t.trim().split(' '));c.q.forEach(y=>y.t.trim().split(' ').forEach(w=>st.add(w)));st.forEach(w=>{if(w)DF[w]=(DF[w]||0)+1})});
 const idf=w=>Math.log(1+CL.length/(DF[w]||1));
 const hit=(t,tk)=>tk.every(w=>t.includes(' '+w));
@@ -23,26 +33,39 @@ function search(q){
   const c=CL.filter(x=>x.k.startsWith(dg.slice(0,7))&&(dg.length>7||x.k.startsWith(dg)));const ql=[];
   if(dg.length>7)for(const x of c)for(const y of x.q)if((x.k+y.c).startsWith(dg))ql.push({c:x,q:y});
   return{...E,c:dg.length>7?[]:c.slice(0,15),nc:c.length,q:ql.slice(0,40),nq:ql.length}}
- const{toks,f}=fixToks(raw);if(!toks.length)return E;
+ const{toks,f}=fixToks(raw,{loose:true});if(!toks.length)return E;
  const c=CL.filter(x=>hit(x.t,toks)),a=x=>x.t.startsWith(' '+toks[0])?0:1;
  c.sort((x,y)=>a(x)-a(y)||x.n.length-y.n.length);
  const ql=[];
  if(toks.length>1||!c.length){for(const x of CL)for(const y of x.q){const t=x.t+y.t;if(hit(t,toks)&&!hit(x.t,toks))ql.push({c:x,q:y,l:t.length})}ql.sort((x,y)=>x.l-y.l)}
  return{c:c.slice(0,15),nc:c.length,q:ql.slice(0,40),nq:ql.length,fix:f?toks.join(' '):''}}
-function matchLine(raw){/* skor: kata cocok / kata input. Kata yang dikoreksi (ejaan atau pemenggalan) membatasi skor maks .8 = sedang. Urutan imbang: bobot IDF. */
- const cl=raw.replace(/rp\.?\s*[\d.,]+/gi,' ').replace(/\b\d+([.,]\d+)?\s*(kg|kilo|gram|gr|g|ons|ltr|liter|l|ml|pcs|buah|biji|bks|bungkus|btl|botol|sachet|dus|karton|lembar|butir|ekor|ikat|porsi)\b/gi,' ').replace(/\b\d{4,}\b/g,' ');
- const{toks,fx}=fixToks(cl);if(!toks.length)return[];const T=toks.length,r=[],cap=fx.length?.8:1;
- for(const x of CL){
-  const m=toks.filter(w=>x.t.includes(' '+w)),rem=toks.filter(w=>!m.includes(w));let bm=0,qs=[];
-  if(rem.length)for(const y of x.q){let n=0;for(const w of rem)if(y.t.includes(' '+w))n++;if(n>bm){bm=n;qs=[y]}else if(n&&n==bm)qs.push(y)}
-  if(!m.length&&!bm)continue;
-  const sc=Math.min(cap,(m.length+bm)/T),mc=m.length,ws=toks.reduce((a,w)=>a+((x.t+(qs[0]?qs[0].t:'')).includes(' '+w)?idf(w):0),0);
-  if(qs.length)qs.sort((a,b)=>a.n.length-b.n.length).slice(0,3).forEach(q=>r.push({x,q,sc,mc,ws,fx,ex:toks.filter(w=>(x.t+q.t+' ').includes(' '+w+' ')).length,tb:x.n.length+q.n.length}));
-  else r.push({x,q:x.q[0],sc,mc,ws,fx,ex:toks.filter(w=>(x.t+' ').includes(' '+w+' ')).length,tb:x.n.length+60})}
- const pr=x=>(x.t.startsWith(' '+toks[0])?0:2)+(x.k[0]=='0'?0:1);
- return r.sort((a,b)=>b.sc-a.sc||b.ws-a.ws||b.ex-a.ex||b.mc-a.mc||pr(a.x)-pr(b.x)||a.tb-b.tb).slice(0,8)}
 const cleanLine=raw=>raw.replace(/rp\.?\s*[\d.,]+/gi,' ').replace(/\b\d+([.,]\d+)?\s*(kg|kilo|gram|gr|g|ons|ltr|liter|l|ml|pcs|buah|biji|bks|bungkus|btl|botol|sachet|dus|karton|lembar|butir|ekor|ikat|porsi)\b/gi,' ').replace(/\b\d{4,}\b/g,' ');
-function pairScore(raw,k,q){const{toks,fx}=fixToks(cleanLine(raw));const x=CM[k];if(!toks.length||!x)return 0;const m=toks.filter(w=>x.t.includes(' '+w)),rem=toks.filter(w=>!m.includes(w)),y=x.q.find(z=>z.c==q),bm=y?rem.filter(w=>y.t.includes(' '+w)).length:0;return Math.min(fx.length?.8:1,(m.length+bm)/toks.length)}
+const AN={};function analyze(raw){if(AN[raw])return AN[raw];const a=fixToks(cleanLine(raw));a.cap=a.fx.length?.8:1;return AN[raw]=a}
+/* Skor = kata cocok / max(kata input, kata di hasil). Kata di hasil = nama komoditas (tanpa tanda kurung) + kata kualitas yang cocok.
+   Tinggi >= .99, sedang >= .5. "Kurang detail" = semua kata input cocok tetapi hasil punya kata tambahan. Kata yang dikoreksi membatasi skor maks .8. */
+const STP=new Set(['dan','atau','yang','untuk']),sw=(ws,t)=>ws.some(v=>v.startsWith(t));
+function alts(x){return x._al||(x._al=x.n.split('/').map(s=>{const p=[],m=s.replace(/\(([^)]*)\)/g,(_,g)=>{p.push(...nz(g).split(' ').filter(Boolean));return' '});return{w:nz(m).split(' ').filter(w=>w&&!STP.has(w)),p}}).filter(a=>a.w.length||a.p.length))}
+const qw=y=>y._w||(y._w=y.t.trim().split(' ').filter(Boolean));
+function altU(x){const l=alts(x);return x._au||(x._au=l.length>1?[...l,{w:[...new Set(l.flatMap(a=>a.w))],p:[...new Set(l.flatMap(a=>a.p))]}]:l)}
+function score2(toks,x,y,cap){const T=toks.length;let best=null;
+ for(const a of altU(x)){let m=0,D=a.w.length;const rest=[],r2=[];for(const t of toks){if(sw(a.w,t))m++;else rest.push(t)}
+  for(const t of rest){if(sw(a.p,t)){m++;D++}else r2.push(t)}
+  let mq=0,qx=0;if(y){const w=qw(y);for(const t of r2)if(sw(w,t))mq++;if(mq)qx=w.filter(v=>!r2.some(t=>v.startsWith(t))).length}
+  const tot=m+mq;if(!tot)continue;const Dd=D+mq,ratio=tot/Math.max(T,Dd),nx=a.w.filter(v=>!toks.some(t=>v.startsWith(t))).length,full=tot==T;
+  /* tinggi: semua kata input ada di nama komoditas, atau nama komoditas utuh tercakup input (+ kualitas). sedang: kata cocok sebagian atau hanya lewat kualitas pada komoditas yang berbeda. */
+  const st=full?(mq==0||nx==0?1:Math.max(.5,Math.min(.9,ratio))):Math.min(.9,ratio),kd=full&&(nx>0||qx>0);
+  if(!best||st>best.st||(st==best.st&&(kd?1:0)<(best.kd?1:0))||(st==best.st&&kd==best.kd&&nx<best.nx))best={st,kd,nx,m}}
+ return best?{sc:Math.min(cap,best.st),kd:best.kd,mc:best.m,nx:best.nx}:null}
+function pairInfo(raw,k,q){const a=analyze(raw),x=CM[k];if(!x||!a.toks.length)return{sc:0,kd:false};const s=score2(a.toks,x,x.q.find(z=>z.c==q),a.cap);return s?{sc:s.sc,kd:s.kd}:{sc:0,kd:false}}
+function matchLine(raw){
+ const a=analyze(raw),toks=a.toks,out=[];out.a=a;if(!toks.length)return out;
+ const pr=x=>(x.t.startsWith(' '+toks[0])?0:2)+(x.k[0]=='0'?0:1);
+ for(const x of CL){const b=score2(toks,x,null,a.cap);if(!b)continue;
+  const al=altU(x),rest=toks.filter(t=>!al.some(q=>sw(q.w,t)||sw(q.p,t)));let bm=0,qs=[];if(rest.length)for(const y of x.q){let n=0;const w=qw(y);for(const t of rest)if(sw(w,t))n++;if(n>bm){bm=n;qs=[y]}else if(n&&n==bm)qs.push(y)}
+  const ws=toks.reduce((s,w)=>s+((x.t+(qs[0]?qs[0].t:'')).includes(' '+w)?idf(w):0),0);
+  const push=(y,tb)=>{const s=score2(toks,x,y,a.cap);out.push({x,q:y,sc:s.sc,kd:s.kd,nx:s.nx,mc:s.mc,ws,ex:toks.filter(w=>(x.t+(y.t||'')+' ').includes(' '+w+' ')).length,tb,pr:pr(x)})};
+  if(qs.length)qs.sort((p,q)=>p.n.length-q.n.length).slice(0,3).forEach(y=>push(y,x.n.length+y.n.length));else push(x.q[0],x.n.length+60)}
+ out.sort((p,q)=>q.sc-p.sc||(p.kd?1:0)-(q.kd?1:0)||p.nx-q.nx||q.ws-p.ws||q.ex-p.ex||q.mc-p.mc||p.pr-q.pr||p.tb-q.tb);const top=out.slice(0,8);top.a=a;return top}
 /* ---- Saran kode untuk Referensi Ikan ---- */
 const PROC=/DIAWETKAN|ASIN|BEKU|KALENG|ASAP|PANGGANG|BAKSO|NUGGET|SOSIS|GILING|KERING|TEMPURA|OTAK|PEDA|SALAI|MANGUT|SURIMI|ROLL|CAVIAR|MENTAH|ANAK|CAMPUR|LAINNYA|TELUR/,STOP=['ikan','basah','segar','iwak'],GEN=['merah','putih','hitam','kuning','biru','laut','sungai','besar','kecil','sedang','hijau'];
 const toks=s=>nz(String(s||'').replace(/^\s*U\.\s+/i,'Udang ')).split(' ').filter(w=>w&&!STOP.includes(w));
