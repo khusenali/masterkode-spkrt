@@ -33,7 +33,10 @@ function matchLine(raw){
   const sc=(m.length+bm)/T,mc=m.length;
   if(qs.length)qs.sort((a,b)=>a.n.length-b.n.length).slice(0,3).forEach(q=>r.push({x,q,sc,mc,ex:toks.filter(w=>(x.t+q.t+' ').includes(' '+w+' ')).length,tb:x.n.length+q.n.length}));
   else r.push({x,q:x.q[0],sc,mc,ex:toks.filter(w=>(x.t+' ').includes(' '+w+' ')).length,tb:x.n.length+60})}
- return r.sort((a,b)=>b.sc-a.sc||b.ex-a.ex||b.mc-a.mc||a.tb-b.tb).slice(0,8)}
+ const pr=x=>(x.t.startsWith(' '+toks[0])?0:2)+(x.k[0]=='0'?0:1);
+ return r.sort((a,b)=>b.sc-a.sc||b.ex-a.ex||b.mc-a.mc||pr(a.x)-pr(b.x)||a.tb-b.tb).slice(0,8)}
+const cleanLine=raw=>raw.replace(/rp\.?\s*[\d.,]+/gi,' ').replace(/\b\d+([.,]\d+)?\s*(kg|kilo|gram|gr|g|ons|ltr|liter|l|ml|pcs|buah|biji|bks|bungkus|btl|botol|sachet|dus|karton|lembar|butir|ekor|ikat|porsi)\b/gi,' ').replace(/\b\d{4,}\b/g,' ');
+function pairScore(raw,k,q){const{toks}=fixToks(cleanLine(raw));const x=CM[k];if(!toks.length||!x)return 0;const m=toks.filter(w=>x.t.includes(' '+w)),rem=toks.filter(w=>!m.includes(w)),y=x.q.find(z=>z.c==q),bm=y?rem.filter(w=>y.t.includes(' '+w)).length:0;return(m.length+bm)/toks.length}
 /* ---- Saran kode untuk Referensi Ikan ---- */
 const PROC=/DIAWETKAN|ASIN|BEKU|KALENG|ASAP|PANGGANG|BAKSO|NUGGET|SOSIS|GILING|KERING|TEMPURA|OTAK|PEDA|SALAI|MANGUT|SURIMI|ROLL|CAVIAR|MENTAH|ANAK|CAMPUR|LAINNYA|TELUR/,STOP=['ikan','basah','segar','iwak'],GEN=['merah','putih','hitam','kuning','biru','laut','sungai','besar','kecil','sedang','hijau'];
 const toks=s=>nz(String(s||'').replace(/^\s*U\.\s+/i,'Udang ')).split(' ').filter(w=>w&&!STOP.includes(w));
