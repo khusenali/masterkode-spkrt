@@ -35,9 +35,11 @@ Key Gemini **tidak pernah** ada di kode app atau di repositori. Browser hanya be
 | `core.js` | Mesin pencarian dan pencocokan baris (tanpa dependensi) |
 | `data.js` | Data master (`const D=...`) |
 | `desc.js` | Deskripsi kelompok (`const DESC=...`) |
+| `icons.js` | Ikon Font Awesome Free 6 (CC BY 4.0, fontawesome.com) sebagai SVG inline, dipakai lewat fungsi `fa('nama-ikon')` |
 | `ikan.js` | Data referensi ikan (`const IKAN=...`), dibuat dari Excel dengan `tools/build_ikan.py` |
 | `ikan/` | Foto referensi ikan, satu file `<ID>.webp` per entri |
 | `tools/build_ikan.py` | Membuat `ikan.js` dari file Excel daftar ikan |
+| `tools/simulasi_beban.mjs` | Simulasi beban Worker (Node 22+) untuk gambaran awal batas pemakaian. Bukan data nyata |
 | `tools/statistik.html` | Halaman lokal untuk melihat statistik pemakaian baca foto dan menghitung batas yang disarankan (jangan diunggah ke GitHub Pages) |
 | `config.js` | Alamat Worker (`const CFG={proxy:'...'}`) |
 | `style.css` | Tema dan gaya |
@@ -190,7 +192,7 @@ Alur yang disarankan:
 1. **Uji coba**: pasang `DB` (atau `KV`) dan `ADMIN_KEY`, biarkan `DEVICE_LIMIT`, `GLOBAL_LIMIT`, dan `MIN_INTERVAL` kosong. Worker hanya menghitung.
 2. Setelah 2–3 hari, buka `tools/statistik.html` di komputer, isi alamat Worker dan `ADMIN_KEY`, lalu lihat jumlah proses, HP aktif, serta median, p90, dan maksimum pemakaian per HP. Panel kedua di halaman itu menghitung batas yang disarankan dari kuota model, jumlah petugas, dan persen pengguna foto.
 3. Isi `DEVICE_LIMIT`, `GLOBAL_LIMIT`, dan `MIN_INTERVAL` di Worker (tanpa mengubah app). Pastikan batas per HP tidak lebih kecil dari p90 hasil uji coba.
-4. Setelah batas aktif, app menampilkan sisa jatah per HP, dan pesan berisi perkiraan jam pulih saat batas atau kuota habis.
+4. Setelah batas aktif, app menampilkan sisa kuota per HP, dan pesan berisi perkiraan jam pulih saat batas atau kuota habis.
 
 Statistik lewat terminal:
 
@@ -209,6 +211,7 @@ Catatan: ID HP dibuat acak dan tidak mengidentifikasi orang, tetapi menghapus da
 | Permintaan | Hasil sukses |
 |---|---|
 | `{"mode":"ping"}` | `{"ok":true}` |
+| `{"mode":"info"}` | `{"ok":true,"info":{"max":5,"device":2,"interval":30},"usage":{...}}`. Tidak memakai kuota Gemini. Dipakai layar Scan untuk menampilkan informasi layanan |
 | `{"mode":"ocr","images":["<base64 JPEG>", ...]}` | `{"items":["beras IR 64","minyak goreng", ...]}` |
 
 Foto dikirim sebagai base64 JPEG (app memperkecilnya ke sisi terpanjang 1600 px di browser). Kode galat:
@@ -291,3 +294,21 @@ Setiap kali file berubah, naikkan nomor versi cache di `sw.js`, misalnya `spkrt-
 ## Sumber data
 
 Data berasal dari Buku 5 Master Kode Komoditas dan Kualitas SPKRT 2027. Hak atas data tetap pada penerbit aslinya. Proyek ini hanya menyajikan ulang data tersebut untuk memudahkan pencarian.
+
+## Tampilan dan lisensi ikon
+
+Tema bawaan adalah **Parchment** (pengguna lama dipindahkan sekali). Ikon berasal dari Font Awesome Free (lisensi ikon CC BY 4.0). App menampilkan atribusi "Icon by fontawesome.com" di menu samping. Gaya komponen meniru pola daisyUI (MIT) dengan CSS sendiri, tanpa memuat pustaka dari internet agar tetap jalan offline.
+
+
+## Kamus istilah (kamus.js)
+
+`kamus.js` memuat pasangan `[istilah, nama baku]` yang dipakai `fixToks` di `core.js` sebelum pencocokan. Hasil pencocokan lewat kamus dibatasi skor 0,80 (sedang) dan ditandai "Kata dikoreksi". Entri yang sama dengan dirinya (mis. `daun singkong`) melindungi frasa dari penggantian. Nama baku harus ada di Buku 5 Master; periksa dengan mencarinya di app setelah mengubah kamus. Kamus tidak diisi pengguna, hanya diubah pengelola kode.
+
+## Pembaruan aplikasi dan versi Beta (v27)
+
+- Nomor versi: `APP_VER` dan `BETA` di awal `app.js`; nama cache `spkrt-vN` di `sw.js`. Naikkan keduanya tiap rilis. Untuk rilis resmi, ubah `BETA=false` agar tanda BETA hilang.
+- Pembaruan tanpa uninstall: tombol **Periksa pembaruan** di Pengaturan, dan pemeriksaan otomatis 4 detik setelah app dibuka dan saat app kembali aktif lebih dari 30 menit. Bila ada versi baru, muncul pop-up atau pita "Versi baru tersedia", lalu Muat ulang.
+- `sw.js` mengunduh file inti dengan `cache:'reload'` agar tidak terambil dari cache HTTP GitHub Pages. Versi baru terlihat 1–2 menit setelah unggah.
+- HP yang masih v26 atau lebih lama tidak punya tombol ini: pasang ulang satu kali.
+- Urungkan 6 detik untuk hapus baris, kosongkan daftar, hapus riwayat, hapus favorit.
+- Teks daftar Scan kini disimpan di localStorage (kunci `spk_st`).
