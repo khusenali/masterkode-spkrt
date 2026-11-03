@@ -23,7 +23,15 @@ function fixToks(q,o){o=o||{};ALLT();const fx=[];const a1=nz(q).split(' ').filte
   if(!pick&&o.loose)pick=c[0];
   if(pick){f=true;fx.push([t,pick,'t']);sug.push({t,o:c,on:pick});return pick}
   sug.push({t,o:c,on:null});return t});
+ if((!o.loose||o.ctx)&&toks.length>=2){const r=ctxFix(toks);if(r){fx.push([toks[r.i],r.w,'t']);sug.push({t:toks[r.i],o:r.o,on:r.w});toks[r.i]=r.w;f=true}}
  return{toks,f,fx,sug,bk}}
+/* Perbaikan lewat konteks: bila tidak ada satu pun komoditas+kualitas yang memuat semua kata (mis. "ikan rambut"), coba ganti satu kata dengan kata mirip yang membuat semua kata cocok ("ikat rambut"). */
+const OPTK=t=>OPT(t)||GENW.has(t);
+const allHit=tk=>CL.some(x=>tk.every(w=>(x.all+' ').includes(' '+w+' ')));
+function ctxFix(toks){ALLT();if(allHit(toks))return null;let best=null;
+ toks.forEach((t,i)=>{if(OPTK(t)||t.length<3)return;for(const w of nearAll(t)){if(w==t||(w.length<3))continue;const tk=toks.map((u,j)=>j==i?w:u);if(!allHit(tk))continue;const n=CL.filter(x=>tk.every(v=>(x.all+' ').includes(' '+v+' '))).length,d=lev(t,w),sc=(DF[w]||0)*1+n-d*5;if(!best||sc>best.sc)best={i,w,sc,o:[]}}});
+ if(!best)return null;best.o=[best.w];return best}
+
 const DF={};CL.forEach(c=>{const st=new Set(c.t.trim().split(' '));c.q.forEach(y=>y.t.trim().split(' ').forEach(w=>st.add(w)));st.forEach(w=>{if(w)DF[w]=(DF[w]||0)+1})});
 const QC={};CL.forEach(x=>x.q.forEach(y=>{const k=y.t.trim();(QC[k]=QC[k]||new Set()).add(x.k)}));
 const idf=w=>Math.log(1+CL.length/(DF[w]||1));
@@ -40,6 +48,7 @@ function search(q){
  c.sort((x,y)=>a(x)-a(y)||x.n.length-y.n.length);
  const ql=[];
  if(toks.length>1||!c.length){for(const x of CL)for(const y of x.q){const t=x.t+y.t;if(hit(t,toks)&&!hit(x.t,toks))ql.push({c:x,q:y,l:t.length})}ql.sort((x,y)=>x.l-y.l)}
+ if(!c.length&&!ql.length&&toks.length>1&&!search.r){const r=fixToks(raw,{loose:true,ctx:true});if(r.f&&r.toks.join(' ')!=toks.join(' ')){search.r=1;try{return search(r.toks.join(' '))}finally{search.r=0}}}
  return{c:c.slice(0,15),nc:c.length,q:ql.slice(0,40),nq:ql.length,fix:f?toks.join(' '):''}}
 const cleanLine=raw=>raw.replace(/rp\.?\s*[\d.,]+/gi,' ').replace(/\b\d{4,}\b/g,' ');
 const AN={};function analyze(raw){if(AN[raw])return AN[raw];const a=fixToks(cleanLine(raw));a.toks=a.toks.filter(t=>!STP.has(t));a.cap=a.fx.length?.8:1;a.nh=a.fx.some(f=>f[2]=='k');return AN[raw]=a}
