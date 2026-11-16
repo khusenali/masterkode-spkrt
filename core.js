@@ -36,6 +36,7 @@ const DF={};CL.forEach(c=>{const st=new Set(c.t.trim().split(' '));c.q.forEach(y
 const QC={};CL.forEach(x=>x.q.forEach(y=>{const k=y.t.trim();(QC[k]=QC[k]||new Set()).add(x.k)}));
 const idf=w=>Math.log(1+CL.length/(DF[w]||1));
 const hit=(t,tk)=>tk.every(w=>t.includes(' '+w));
+const byK=(x,y)=>x.k<y.k?-1:x.k>y.k?1:0,byQ=(x,y)=>{const a=x.c.k+x.q.c,b=y.c.k+y.q.c;return a<b?-1:a>b?1:0};
 function search(q){
  const raw=q.trim(),E={c:[],q:[],fix:'',nc:0,nq:0};if(!raw)return E;
  const dg=raw.replace(/[\s.\-·]/g,'');
@@ -49,7 +50,8 @@ function search(q){
  const ql=[];
  if(toks.length>1||!c.length){for(const x of CL)for(const y of x.q){const t=x.t+y.t;if(hit(t,toks)&&!hit(x.t,toks))ql.push({c:x,q:y,l:t.length})}ql.sort((x,y)=>x.l-y.l)}
  if(!c.length&&!ql.length&&toks.length>1&&!search.r){const r=fixToks(raw,{loose:true,ctx:true});if(r.f&&r.toks.join(' ')!=toks.join(' ')){search.r=1;try{return search(r.toks.join(' '))}finally{search.r=0}}}
- return{c:c.slice(0,15),nc:c.length,q:ql.slice(0,40),nq:ql.length,fix:f?toks.join(' '):''}}
+ /* pilih hasil paling relevan dulu (cocok di awal / nama pendek), lalu tampilkan urut kode kecil ke besar */
+ return{c:c.slice(0,15).sort(byK),nc:c.length,q:ql.slice(0,40).sort(byQ),nq:ql.length,fix:f?toks.join(' '):''}}
 const cleanLine=raw=>raw.replace(/rp\.?\s*[\d.,]+/gi,' ').replace(/\b\d{4,}\b/g,' ');
 const AN={};function analyze(raw){if(AN[raw])return AN[raw];const a=fixToks(cleanLine(raw));a.toks=a.toks.filter(t=>!STP.has(t));a.cap=a.fx.length?.8:1;a.nh=a.fx.some(f=>f[2]=='k');return AN[raw]=a}
 /* Skor = kata cocok / max(kata input, kata di hasil). Kata di hasil = nama komoditas (tanpa tanda kurung) + kata kualitas yang cocok.
