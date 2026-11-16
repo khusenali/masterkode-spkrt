@@ -114,6 +114,9 @@ input[type=file].fhid{position:absolute;width:1px;height:1px;opacity:0;overflow:
 .grp.v3 summary::after{content:none}.grp.v3 .chv{flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:var(--cd);color:var(--ac);display:flex;align-items:center;justify-content:center}
 .grp.v3 .chv::before{content:'▾'}.grp.v3:not([open]) .chv::before{content:'▸'}
 .grp.v3 .gb{margin-left:14px;padding-left:12px;border-left:2px solid var(--bd)}
+#ld #ldr{margin-top:14px;padding:9px 18px;border:1px solid var(--bd);border-radius:12px;background:var(--cd);color:var(--ac);font:600 14px system-ui}
+#ixp{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:30;background:var(--cd);color:var(--mu);border:1px solid var(--bd);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(60,45,10,.15);pointer-events:none}
+#ixp.ok{color:var(--ac)}
 @supports (-webkit-touch-callout:none){
 html{-webkit-text-size-adjust:100%}
 body{touch-action:manipulation;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}

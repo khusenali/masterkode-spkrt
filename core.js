@@ -1,9 +1,12 @@
 const nz=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const G=D.G,S=D.S,K=D.K,CM={};
 D.C.forEach(c=>{CM[c[0]]={k:c[0],n:c[1],t:' '+nz(c[1]),q:c[2].map(x=>({c:x[0],n:x[1],t:' '+nz(x[1])}))}});
-const CL=D.C.map(c=>CM[c[0]]),VS=new Set();
-CL.forEach(c=>{c.t.trim().split(' ').forEach(w=>w&&VS.add(w));c.q.forEach(q=>q.t.trim().split(' ').forEach(w=>w&&VS.add(w)))});
-const V=[...VS].sort();
+const CL=D.C.map(c=>CM[c[0]]);let VS=new Set(),V=[],DF={},QC={},IDXR=false,IDXP=0;
+/* indeks pencarian dibangun bertahap (latar belakang) supaya layar pertama cepat; dipaksa selesai bila pencarian dipakai lebih dulu */
+function*IDXG(){const n=CL.length,st=300;for(let i=0;i<n;i+=st){for(const c of CL.slice(i,i+st)){const s=new Set(c.t.trim().split(' '));c.q.forEach(y=>{y.t.trim().split(' ').forEach(w=>s.add(w));const k=y.t.trim();(QC[k]=QC[k]||new Set()).add(c.k)});s.forEach(w=>{if(w){VS.add(w);DF[w]=(DF[w]||0)+1}})}IDXP=Math.min(.95,(i+st)/n);yield}V=[...VS].sort();IDXP=1;IDXR=true}
+const IDXI=IDXG();function idxSync(){while(!IDXR)IDXI.next()}
+function idxBg(cb){const f=()=>{const t=performance.now();while(!IDXR&&performance.now()-t<25)IDXI.next();cb&&cb(IDXP);if(!IDXR)setTimeout(f,0)};setTimeout(f,0)}
+
 const has=t=>{let lo=0,hi=V.length;while(lo<hi){const m=(lo+hi)>>1;if(V[m]<t)lo=m+1;else hi=m}return lo<V.length&&V[lo].startsWith(t)};
 const lev=(a,b)=>{let p=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]};
 const near=t=>{const mx=t.length<=4?1:2;let b=null,bd=9;for(const w of V){if(Math.abs(w.length-t.length)>mx)continue;const d=lev(t,w);if(d<bd||(d===bd&&b&&w.length<b.length)){bd=d;b=w}}return bd<=mx?b:null};
@@ -15,7 +18,7 @@ function derive(t,hw){hw=hw||has;for(const a of PF)if(t.startsWith(a))for(const 
 function kamus(arr,fx){if(typeof KAM=='undefined')return arr;if(!KAM.s){KAM.sort((a,b)=>b[0].split(' ').length-a[0].split(' ').length);KAM.s=1}const mk=arr.map(()=>0);for(const[k,v]of KAM){const kt=k.split(' '),vt=v.split(' ');for(let i=0;i+kt.length<=arr.length;i++){if(mk[i]||kt.some((w,j)=>arr[i+j]!==w||mk[i+j]))continue;if(k!==v)fx.push([k,v,'k']);arr.splice(i,kt.length,...vt);mk.splice(i,kt.length,...vt.map(()=>1));i+=vt.length-1}}return arr}
 const nearAll=t=>{const mx=t.length<=4?1:2,o=[];for(const w of V){if(Math.abs(w.length-t.length)>mx)continue;const d=lev(t,w);if(d<=mx)o.push([d,w])}o.sort((a,b)=>a[0]-b[0]||(DF[b[1]]||0)-(DF[a[1]]||0)||a[1].length-b[1].length);return o.slice(0,3).map(x=>x[1])};
 const ALLT=()=>CL.all||(CL.all=1,CL.forEach(x=>{x.all=x.t+x.q.map(y=>y.t).join('')}),1);
-function fixToks(q,o){o=o||{};ALLT();const fx=[];const a1=nz(q).split(' ').filter(Boolean).map(w=>{const b=AL[w];if(b&&b!==w){fx.push([w,b,'b']);return b}return w}),bk=fx.length?a1.join(' '):'';
+function fixToks(q,o){o=o||{};idxSync();ALLT();const fx=[];const a1=nz(q).split(' ').filter(Boolean).map(w=>{const b=AL[w];if(b&&b!==w){fx.push([w,b,'b']);return b}return w}),bk=fx.length?a1.join(' '):'';
  const arr=kamus(a1.join(' ').split(' ').filter(Boolean),fx),sug=[],hw=o.loose?has:(t=>VS.has(t)),st=arr.map(t=>(/\d/.test(t)||hw(t)||UNITS.has(t))?1:0);let f=fx.length>0;
  const toks=arr.map((t,i)=>{if(st[i])return t;const d=derive(t,hw);if(d){f=true;fx.push([t,d,'t']);return d}
   const c=nearAll(t);if(!c.length)return t;const oth=arr.filter((u,j)=>j!=i&&st[j]&&!/^\d+$/.test(u));let pick=null;
@@ -32,12 +35,10 @@ function ctxFix(toks){ALLT();if(allHit(toks))return null;let best=null;
  toks.forEach((t,i)=>{if(OPTK(t)||t.length<3)return;for(const w of nearAll(t)){if(w==t||(w.length<3))continue;const tk=toks.map((u,j)=>j==i?w:u);if(!allHit(tk))continue;const n=CL.filter(x=>tk.every(v=>(x.all+' ').includes(' '+v+' '))).length,d=lev(t,w),sc=(DF[w]||0)*1+n-d*5;if(!best||sc>best.sc)best={i,w,sc,o:[]}}});
  if(!best)return null;best.o=[best.w];return best}
 
-const DF={};CL.forEach(c=>{const st=new Set(c.t.trim().split(' '));c.q.forEach(y=>y.t.trim().split(' ').forEach(w=>st.add(w)));st.forEach(w=>{if(w)DF[w]=(DF[w]||0)+1})});
-const QC={};CL.forEach(x=>x.q.forEach(y=>{const k=y.t.trim();(QC[k]=QC[k]||new Set()).add(x.k)}));
 const idf=w=>Math.log(1+CL.length/(DF[w]||1));
 const hit=(t,tk)=>tk.every(w=>t.includes(' '+w));
 const byK=(x,y)=>x.k<y.k?-1:x.k>y.k?1:0,byQ=(x,y)=>{const a=x.c.k+x.q.c,b=y.c.k+y.q.c;return a<b?-1:a>b?1:0};
-function search(q){
+function search(q){idxSync();
  const raw=q.trim(),E={c:[],q:[],fix:'',nc:0,nq:0};if(!raw)return E;
  const dg=raw.replace(/[\s.\-·]/g,'');
  if(/^\d+$/.test(dg)){
