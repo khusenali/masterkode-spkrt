@@ -5,7 +5,8 @@ let P=(p=>{p=Object.assign({t:'parchment',d:'home',f:'plain'},p);if(p.tv!=2){p.t
 let INFO=LS.g('inf',null),infT=0,welcomed=0,gtab='g';const maxF=()=>(INFO&&INFO.max)||5;
 let G2=Object.assign({ok:false},LS.g('gm',{})),GU=LS.g('gu',{d:'',n:0}),shown=25,flt='all',busy='';const today=()=>new Date().toISOString().slice(0,10);
 let ikH='laut',ikK='all',ikQ='';
-const APP_VER='28.1',BETA=true,IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1),STDA=!!navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+if(window.__core!=='28.3'&&window.__heal){window.__heal('Versi file tidak sama (cache lama). Mengatur ulang…',1);throw new Error('versi file tidak sama')}
+const APP_VER='28.3',BETA=true,IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1),STDA=!!navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
 const bump=(a,x)=>[x,...a.filter(y=>y!==x)].slice(0,5),sv=()=>{LS.s('p',P);LS.s('fv',FV);LS.s('rq',RQ);LS.s('rc',RC);LS.s('sc',scan);LS.s('fq',FQ);LS.s('gm',G2);LS.s('st',scanTxt)};
 const fc=c=>c.length>4?c.slice(0,4)+' '+c.slice(4):c,fsp=c=>c.slice(0,2)+' '+c[2]+' '+c[3]+' '+c.slice(4);
 const full=(k,q)=>P.f=='plain'?k+q:fsp(k)+' '+q;
@@ -258,7 +259,9 @@ async function checkUpd(manual){const bt=manual?document.querySelector('[data-a=
  fin();
  if(updReady){if(manual)await showUpd();else updBanner()}else if(manual)await ask({t:'Sudah versi terbaru',b:`Anda memakai versi ${APP_VER}${BETA?' Beta':''}.`,k:'ok'})}
 if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!swHad){swHad=true;return}updReady=true;updW.splice(0).forEach(f=>f());updBanner()});
- navigator.serviceWorker.register('./sw.js').then(r=>{swReg=r;setTimeout(()=>checkUpd(false),4000)}).catch(()=>{});
+ const regSW=()=>navigator.serviceWorker.register('./sw.js').then(r=>{swReg=r;setTimeout(()=>checkUpd(false),4000);const cn=navigator.connection||{},slow=cn.saveData||/(^|-)2g$/.test(cn.effectiveType||'');if(!slow)setTimeout(()=>{try{(r.active||navigator.serviceWorker.controller||{postMessage(){}}).postMessage('precache')}catch(e){}},15000)}).catch(()=>{});
+ /* daftar SW setelah tampilan pertama dan situs selesai dimuat, agar unduhan SW tidak berebut jaringan dengan layar pertama */
+ const goSW=()=>setTimeout(regSW,2500);if(document.readyState=='complete')goSW();else addEventListener('load',goSW);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-lastChk>18e5)checkUpd(false)})}
 /* tombol kembali ke atas (Scan) */
 (()=>{const b=document.createElement('button');b.id='tp';b.className='fab';b.dataset.a='top';b.setAttribute('aria-label','Kembali ke atas');b.innerHTML=fa('arrow-up',18);document.body.appendChild(b);addEventListener('scroll',()=>{b.classList.toggle('on',cur().v=='scan'&&scan.length>6&&scrollY>700&&!lay().o)},{passive:true})})();
@@ -266,4 +269,5 @@ if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('contr
 (()=>{const p=document.createElement('div');p.id='ixp';p.setAttribute('role','status');p.hidden=true;document.body.appendChild(p);let sh=0;
  idxBg(v=>{if(IDXR){p.classList.add('ok');p.textContent='Pencarian siap ✓';setTimeout(()=>p.remove(),1200);return}const n=Math.round(v*100);if(!sh&&n<100){sh=1;p.hidden=false}p.textContent='Menyiapkan pencarian… '+n+'%'})})();
 /* loader awal: sembunyikan setelah tampilan pertama siap */
+try{sessionStorage.removeItem('spk_heal')}catch(e){}
 (()=>{const l=document.getElementById('ld');if(!l)return;const v=+getComputedStyle(l).opacity>.05;if(!v){l.remove();return}l.classList.add('off');setTimeout(()=>l.remove(),400)})();
