@@ -1,5 +1,5 @@
 /* tema tersimpan dibaca lebih awal agar loader tidak berkedip warna */
-try{var p=JSON.parse(localStorage.getItem("spk_p")||"{}");if(p.tv==2&&p.t)document.documentElement.setAttribute("data-t",p.t)}catch(e){}
+try{var p=JSON.parse(localStorage.getItem("spk_p")||"{}");if(p.tv==2&&p.t){document.documentElement.setAttribute("data-t",p.t);var M={midnight:"#171a3a",slate:"#151f25",parchment:"#ebe6da",sky:"#e4eef9"},c=M[p.t],m=document.querySelector("meta[name=theme-color]");if(c&&m)m.setAttribute("content",c)}}catch(e){}
 
 /* pengaman loader: pesan bila lambat, dan bila gagal muat atau error */
 (function(){var lt=null;
