@@ -1,4 +1,4 @@
-window.__core='29';
+window.__core='1.0';
 const nz=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 /* Data pusat hasil unduhan (spk_md) dipakai bila lolos pemeriksaan; jika tidak, data bawaan (data.js). */
 function fromMaster(m,v){try{const A=a=>Array.isArray(a)?a:[],o={G:{},S:{},K:{}},nm={},qs={};
