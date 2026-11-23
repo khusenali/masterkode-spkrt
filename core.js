@@ -1,8 +1,16 @@
 window.__core='29';
 const nz=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-const G=D.G,S=D.S,K=D.K,CM={};
-D.C.forEach(c=>{CM[c[0]]={k:c[0],n:c[1],t:' '+nz(c[1]),q:c[2].map(x=>({c:x[0],n:x[1],t:' '+nz(x[1])}))}});
-const CL=D.C.map(c=>CM[c[0]]);let VS=new Set(),V=[],DF={},QC={},IDXR=false,IDXP=0;
+/* Data pusat hasil unduhan (spk_md) dipakai bila lolos pemeriksaan; jika tidak, data bawaan (data.js). */
+function fromMaster(m,v){try{const A=a=>Array.isArray(a)?a:[],o={G:{},S:{},K:{}},nm={},qs={};
+ A(m.kelompok).forEach(r=>{if(/^\d{2}$/.test(r[0]))o.G[r[0]]=String(r[1])});A(m.subkelompok).forEach(r=>{if(/^\d{3}$/.test(r[0]))o.S[r[0]]=String(r[2])});A(m.kelas).forEach(r=>{if(/^\d{4}$/.test(r[0]))o.K[r[0]]=String(r[2])});
+ A(m.komoditas).forEach(r=>{if(/^\d{7}$/.test(r[0]))nm[r[0]]=String(r[2])});let nq=0;
+ A(m.kualitas).forEach(r=>{if(/^\d{10}$/.test(r[0])&&nm[r[0].slice(0,7)]!==undefined){(qs[r[0].slice(0,7)]=qs[r[0].slice(0,7)]||[]).push([r[0].slice(7),String(r[2])]);nq++}});
+ o.C=Object.keys(nm).sort().filter(k=>qs[k]).map(k=>[k,nm[k],qs[k].sort((a,b)=>a[0]<b[0]?-1:1)]);o.X=Object.keys(nm).length-o.C.length;o.T=v&&v.diperbarui?String(v.diperbarui):D.T;
+ return nq>=30000&&o.C.length>=D.C.length*.9&&Object.keys(o.G).length>=10?o:null}catch(e){return null}}
+const DD=(()=>{try{const j=JSON.parse(localStorage.getItem('spk_md')||'null');return j&&j.m?fromMaster(j.m,j.v):null}catch(e){return null}})()||D;
+const G=DD.G,S=DD.S,K=DD.K,CM={};
+DD.C.forEach(c=>{CM[c[0]]={k:c[0],n:c[1],t:' '+nz(c[1]),q:c[2].map(x=>({c:x[0],n:x[1],t:' '+nz(x[1])}))}});
+const CL=DD.C.map(c=>CM[c[0]]);let VS=new Set(),V=[],DF={},QC={},IDXR=false,IDXP=0;
 /* indeks pencarian dibangun bertahap (latar belakang) supaya layar pertama cepat; dipaksa selesai bila pencarian dipakai lebih dulu */
 function*IDXG(){const n=CL.length,st=300;for(let i=0;i<n;i+=st){for(const c of CL.slice(i,i+st)){const s=new Set(c.t.trim().split(' '));c.q.forEach(y=>{y.t.trim().split(' ').forEach(w=>s.add(w));const k=y.t.trim();(QC[k]=QC[k]||new Set()).add(c.k)});s.forEach(w=>{if(w){VS.add(w);DF[w]=(DF[w]||0)+1}})}IDXP=Math.min(.95,(i+st)/n);yield}V=[...VS].sort();IDXP=1;IDXR=true}
 const IDXI=IDXG();function idxSync(){while(!IDXR)IDXI.next()}

@@ -192,6 +192,26 @@ main[data-v=rform] .pr-sv{position:sticky;bottom:10px;z-index:3;box-shadow:0 6px
 .pr-wm{padding:12px 14px;font-size:14px;margin:0 0 12px}
 .pr-wm>b{display:inline;font-size:14px;margin:0}
 .pr-hd .btn,.pr-h .btn{white-space:nowrap}
+/* form profil: opsi A (kartu, baris, sakelar) */
+.pr-cd2{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:2px 16px 14px;margin:0 0 6px}
+.pr-cd2>.pr-sp:last-child{border-bottom:0}
+.pr-cd2 .pr-sp{padding:6px 0}
+.pr-cd2 .pr-g{margin:20px 0 10px}.pr-cd2>.pr-g:first-child{margin-top:16px}
+.pr-cd2>.pr-g+.pr-sp{border-top:0}
+.pr-rg{display:flex;border:1px solid var(--bd);border-radius:12px;overflow:hidden;background:var(--bg2)}
+.pr-rg>button{font-size:14px!important;flex:1 1 0;min-width:0;white-space:normal;overflow-wrap:normal;min-height:52px;padding:8px 6px;border:0;border-right:1px solid var(--bd);border-radius:0;background:transparent;color:var(--tx);font:inherit;font-size:15px;line-height:1.3;text-align:center}
+.pr-rg>button:last-child{border-right:0}
+.pr-rg>button.on{background:var(--ac);color:var(--fg);font-weight:600}
+.pr-rg.v{flex-direction:column}
+.pr-rg.v>button{border-right:0;border-bottom:1px solid var(--bd);text-align:left;padding:10px 14px}
+.pr-rg.v>button:last-child{border-bottom:0}
+.pr-rg>button:focus-visible{outline:2px solid var(--ac);outline-offset:-3px}
+.pr-swr{cursor:pointer}
+.pr-sw{flex:0 0 52px;height:30px;border-radius:30px;background:var(--bd);position:relative;transition:background .15s}
+.pr-sw:after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+.pr-swr.on .pr-sw{background:var(--ac)}.pr-swr.on .pr-sw:after{left:25px}
+.pr-swr:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){.pr-sw,.pr-sw:after{transition:none}}
 /* iOS Safari saja (-webkit-touch-callout hanya ada di WebKit iOS): tampilan Android/desktop tidak berubah */
 /* grup A/B */
 .grp.v3 summary{background:rgba(138,106,31,.10);background:color-mix(in srgb,var(--ac) 11%,var(--cd));border:1px solid var(--bd);border-left:1px solid var(--bd);border-radius:18px;padding:14px;gap:14px;margin:20px 0 12px}
