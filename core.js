@@ -1,4 +1,4 @@
-window.__core='28.5';
+window.__core='29';
 const nz=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const G=D.G,S=D.S,K=D.K,CM={};
 D.C.forEach(c=>{CM[c[0]]={k:c[0],n:c[1],t:' '+nz(c[1]),q:c[2].map(x=>({c:x[0],n:x[1],t:' '+nz(x[1])}))}});
