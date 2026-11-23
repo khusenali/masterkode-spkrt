@@ -1,0 +1,14 @@
+{
+  "master_versi_pusat": "1",
+  "sinkron_pusat": "2026-10-26T15:52:42.577+07:00",
+  "diperbarui": "2026-11-23T19:36:54+07:00",
+  "diperbarui_teks": "23-11-2026 19.36 WIB",
+  "hash": "5160b4cf840d7c19",
+  "jumlah": {
+    "kelompok": 12,
+    "subkelompok": 46,
+    "kelas": 131,
+    "komoditas": 3214,
+    "kualitas": 40872
+  }
+}
